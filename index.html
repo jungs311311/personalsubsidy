@@ -111,6 +111,11 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
 .stf{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;background:var(--surface)}
 .stf legend{font-size:12px;font-weight:600;color:var(--muted);padding:0 4px}
 .stf .check{font-size:13px;gap:6px} .stf b{font-size:13px} .stf .st{font-size:12.5px} .stf i{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.golist{display:flex;flex-wrap:wrap;gap:6px}
+.golist .go{display:inline-flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg);line-height:1.3}
+.golist .go small{font-size:11px;font-weight:400;color:var(--muted)}
+.golist .go:hover{border-color:var(--teal)}
+.nolink{font-size:12px;color:var(--muted)}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
@@ -632,6 +637,24 @@ function textConds(x,p){const a=x.api||{},nm=x.name||"",all=[nm,x.amount,a.targe
   if(/신혼/.test(nm))r.push([married(p)?true:"?","신혼부부 (공고 문구)"]);
   if(/보훈|국가유공자|참전/.test(nm))r.push(["?","국가보훈대상자 (공고 문구)"]);
   return r}
+// ── 신청·안내 사이트 링크 (카드마다 어느 사이트로 가는지 주소까지 표시) ──
+const SITES=[
+ ["복지로","https://www.bokjiro.go.kr"],["정부24","https://www.gov.kr"],["혜택알리미","https://www.gov.kr"],["홈택스","https://www.hometax.go.kr"],["손택스","https://www.hometax.go.kr"],
+ ["기금e든든","https://enhuf.molit.go.kr"],["서민금융","https://www.kinfa.or.kr"],["고용24","https://www.work24.go.kr"],["고용센터","https://www.work24.go.kr"],
+ ["한국장학재단","https://www.kosaf.go.kr"],["무공해차","https://ev.or.kr"],["한전ON","https://online.kepco.co.kr"],["문화누리","https://www.mnuri.kr"],
+ ["에너지바우처","https://www.energyv.or.kr"],["K-패스","https://korea-pass.kr"],["대구安방","https://anbang.daegu.go.kr"],["아이돌봄","https://www.idolbom.go.kr"],
+ ["노인일자리","https://www.seniorro.or.kr"],["건강보험","https://www.nhis.or.kr"],["The건강보험","https://www.nhis.or.kr"],["국민연금","https://www.nps.or.kr"],
+ ["위택스","https://www.wetax.go.kr"],["대구테크노파크","https://www.dgtp.or.kr"]];
+const SRC_NAME={"복지로":"복지로","온통청년":"온통청년"};
+function host(u){try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return ""}}
+function linksOf(x){const out=[],seen=new Set();const add=(label,url)=>{const h=host(url);if(!h||seen.has(h))return;seen.add(h);out.push({label,url,h})};
+  if(x.api&&x.api.url)add((SRC_NAME[x.api.src]||"정부24")+"에서 자세히 보기",x.api.url);
+  const t=(x.apply||"")+" "+(x.org||"");
+  const m=t.match(/https?:\/\/[^\s)·,]+|[a-z0-9-]+(\.[a-z0-9-]+)*\.(go|or|co)\.kr[^\s)·,]*/i);if(m)add("신청 사이트",/^http/.test(m[0])?m[0]:"https://"+m[0]);
+  for(const [k,u] of SITES)if(t.includes(k))add(k+" 바로가기",u);
+  return out.slice(0,3)}
+function linksHtml(x){const l=linksOf(x);if(!l.length)return `<div class="golist"><span class="nolink">온라인 신청 사이트 없음 · 주민센터·담당 기관 방문</span></div>`;
+  return `<div class="golist">${l.map(o=>`<a class="go" href="${esc(o.url)}" target="_blank" rel="noopener"><span>${esc(o.label)} ↗</span><small>${esc(o.h)}</small></a>`).join("")}</div>`}
 let LIMIT={local:30,nat:30};
 function render(){
   showInc();
@@ -669,7 +692,7 @@ function render(){
       ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
       <ul class="conds">${c.map(([v,l])=>`<li class="${v===true?"ok":"q"}"><i class="dot"></i>${esc(l)}</li>`).join("")}</ul>
       <div class="meta">${x.org?`<span>기관: ${esc(x.org)}</span>`:""}<span>신청: ${esc(x.apply)}</span>${x.api&&x.api.tel?`<span>문의: ${esc(x.api.tel)}</span>`:""}</div>
-      ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<p><b>대상</b> ${esc(x.api.target)}</p>`:""}${x.api.criteria?`<p><b>선정기준</b> ${esc(x.api.criteria)}</p>`:""}</details>`:""}${x.api&&x.api.url?`<a class="go" href="${esc(x.api.url)}" target="_blank" rel="noopener">${x.api.src==="복지로"?"복지로":x.api.src==="온통청년"?"온통청년":"정부24"}에서 자세히 보기 →</a>`:""}
+      ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<p><b>대상</b> ${esc(x.api.target)}</p>`:""}${x.api.criteria?`<p><b>선정기준</b> ${esc(x.api.criteria)}</p>`:""}</details>`:""}${linksHtml(x)}
     </article>`};
   const local=shown.filter(h=>h.x.reg!=="전국"), nat=shown.filter(h=>h.x.reg==="전국");
   const localName=p.reg==="기타"?"대구·경북":p.reg+" "+p.sgg;
