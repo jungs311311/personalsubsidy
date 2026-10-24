@@ -107,6 +107,10 @@ select:focus,input:focus,button:focus-visible{outline:2px solid var(--teal);outl
 .moreBtn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px;cursor:pointer}
 input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 .amount.long{font-weight:600;font-size:14px;line-height:1.55;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.st-always{background:var(--teal-soft);color:var(--teal)}
+.stf{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;background:var(--surface)}
+.stf legend{font-size:12px;font-weight:600;color:var(--muted);padding:0 4px}
+.stf .check{font-size:13px;gap:6px} .stf .st{font-size:12.5px} .stf i{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
@@ -176,7 +180,13 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
     <section style="display:flex;flex-direction:column;gap:14px;min-width:0">
       <div class="summary" id="summary" style="scroll-margin-top:12px"></div>
       <input id="q" type="search" placeholder="지원 이름으로 찾기 (예: 월세, 출산, 장학금)" aria-label="지원 이름 검색">
-      <label class="check" style="font-size:13.5px"><input id="openOnly" type="checkbox"> 지금 신청할 수 있는 것만 보기</label>
+      <fieldset class="stf" id="stf"><legend>신청 상태</legend>
+        <label class="check"><input type="checkbox" data-k="always" checked><span class="st st-open">상시 신청 가능</span><i id="cnt-always"></i></label>
+        <label class="check"><input type="checkbox" data-k="open" checked><span class="st st-open">신청 가능</span><i id="cnt-open"></i></label>
+        <label class="check"><input type="checkbox" data-k="soon" checked><span class="st st-soon">접수 예정</span><i id="cnt-soon"></i></label>
+        <label class="check"><input type="checkbox" data-k="closed" checked><span class="st st-closed">마감</span><i id="cnt-closed"></i></label>
+        <label class="check"><input type="checkbox" data-k="chk" checked><span class="st st-chk">공고 확인 필요</span><i id="cnt-chk"></i></label>
+      </fieldset>
       <div class="legend"><span><i class="dot" style="background:var(--teal)"></i>조건 충족</span><span><i class="dot" style="border:2px solid var(--gold)"></i>공고에서 직접 확인 필요</span></div>
       <div id="list" style="display:flex;flex-direction:column;gap:22px"></div>
       <p class="note">직접 정리한 지원은 매일 공고·보도를 확인해 고치고, "보조금24" 표시가 붙은 지원은 행정안전부 공공서비스 데이터에서 매일 새벽 자동으로 가져옵니다. 금액과 모집 기간은 바뀔 수 있으니 신청 전 각 기관 공고를 꼭 확인하세요. 입력한 정보는 저장하지 않습니다.</p>
@@ -441,14 +451,15 @@ const PER={
  "본인부담상한제 환급":{always:1,text:"매년 8월 말 공단이 안내 · 받을 권리는 3년간 유지"},
 };
 function perState(per){
-  if(!per)return{k:"chk",l:"공고 확인"};
-  if(per.always)return{k:"open",l:"상시 신청"};
+  if(!per)return{k:"chk",l:"공고 확인 필요"};
+  if(per.always)return{k:"always",l:"상시 신청 가능"};
   const t=new Date();t.setHours(0,0,0,0);
   const s=per.start?new Date(per.start+"T00:00:00"):null, e=per.end?new Date(per.end+"T00:00:00"):null;
-  if(e&&t>e)return{k:"closed",l:"올해 마감 · 다음 공고 대기"};
+  if(e&&t>e)return{k:"closed",l:"마감 · 다음 공고 대기"};
   if(s&&t<s)return{k:"soon",l:"접수 예정"};
-  if(s)return{k:"open",l:"접수 중"};
-  return{k:"chk",l:"공고 확인"};
+  if(e)return{k:"open",l:"신청 가능 (마감 전)"};
+  if(s)return{k:"open",l:"신청 가능 (접수 중)"};
+  return{k:"chk",l:"공고 확인 필요"};
 }
 const TYPES=["현금","바우처","대출·이자","감면·할인","구매지원","서비스"];
 let filter="전체";
@@ -618,7 +629,9 @@ function render(){
     if(c.some(([v])=>v===false))continue;
     hits.push({x,c,likely:c.every(([v])=>v===true)});
   }
-  if($("openOnly").checked){for(let i=hits.length-1;i>=0;i--){if(perState(hits[i].x.per||PER[hits[i].x.name]).k!=="open")hits.splice(i,1)}}
+  const stOn=new Set([...document.querySelectorAll("#stf input:checked")].map(i=>i.dataset.k)),stCnt={always:0,open:0,soon:0,closed:0,chk:0};
+  for(let i=hits.length-1;i>=0;i--){const k=perState(hits[i].x.per||PER[hits[i].x.name]).k;stCnt[k]++;if(!stOn.has(k))hits.splice(i,1)}
+  for(const k in stCnt)$("cnt-"+k).textContent=stCnt[k].toLocaleString();
   hits.sort((a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
   const counts={};TYPES.forEach(t=>counts[t]=hits.filter(h=>h.x.type===t).length);
   if(filter!=="전체"&&!counts[filter])filter="전체";
@@ -651,7 +664,7 @@ $("region").addEventListener("change",()=>{fillSgg();render()});
 $("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("list").addEventListener("click",e=>{const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=60;render()}});
-$("openOnly").addEventListener("change",render);
+$("stf").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);
 fillSgg("수성구");render();
