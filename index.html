@@ -489,8 +489,10 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 // ── 보조금24 API 데이터 (data/benefits.json · GitHub가 매일 자동 갱신) ──
 let APIITEMS=[], APIUPDATED="";
 const norm=s=>String(s).replace(/[\s()·\-–_,.\[\]]/g,"");
-const MANUAL=P.map(x=>norm(x.name)).filter(n=>n.length>=4);
-function isDup(name){const n=norm(name);return MANUAL.some(m=>n.includes(m)||m.includes(n))}
+// 직접 정리한 지원과 "이름이 정확히 같은" 보조금24 항목만 숨김 (괄호 속 설명은 빼고 비교)
+const base=s=>norm(String(s).replace(/\(.*?\)/g,""));
+const MANUAL=new Set(P.map(x=>base(x.name)));
+function isDup(name){return MANUAL.has(base(name))}
 function kindOf(k){k=k||"";if(/감면/.test(k))return"감면·할인";if(/융자|대출/.test(k))return"대출·이자";if(/이용권|바우처/.test(k))return"바우처";if(/현금/.test(k))return"현금";return"서비스"}
 const INC_LAB={JA0201:"50% 이하",JA0202:"51~75%",JA0203:"76~100%",JA0204:"101~200%",JA0205:"200% 초과"};
 const incCode=p=>p.inc===0?null:p.inc<=50?"JA0201":p.inc<=75?"JA0202":p.inc<=100?"JA0203":p.inc<=200?"JA0204":"JA0205";
