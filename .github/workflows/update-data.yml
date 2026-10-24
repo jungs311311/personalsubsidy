@@ -30,6 +30,11 @@ jobs:
         env:
           BOKJIRO_KEY: ${{ secrets.BOKJIRO_KEY || secrets.GOV24_KEY || secrets.ODCLOUD_KEY }}
         run: python scripts/fetch_bokjiro.py
+      - name: 복지로 지자체(대구·경북) 받기 (실패해도 계속)
+        continue-on-error: true
+        env:
+          BOKJIRO_KEY: ${{ secrets.BOKJIRO_KEY || secrets.GOV24_KEY || secrets.ODCLOUD_KEY }}
+        run: python scripts/fetch_local.py
       - name: 온통청년 청년정책 받기 (실패해도 계속)
         continue-on-error: true
         env:

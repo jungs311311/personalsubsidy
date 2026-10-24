@@ -532,11 +532,12 @@ const nz=s=>String(s||"").replace(/[\s·ㆍ.]/g,"");
 const LIFE_ALL=["영유아","아동","청소년","청년","중장년","노년","임신출산"];
 function stagesOf(p){const st=new Set();const a=p.age;st.add(a<6?"영유아":a<13?"아동":a<19?"청소년":a<35?"청년":a<65?"중장년":"노년");
   if(p.kids>=1){const y=p.young;st.add(y<6?"영유아":y<13?"아동":y<19?"청소년":"청년")}if(p.preg||(p.kids>=1&&p.young===0))st.add("임신출산");return st}
-function bokTest(it){const life=(it.lifeArray||"").split(",").map(nz).filter(Boolean),tg=(it.trgterIndvdlArray||"").split(",").map(nz).filter(Boolean);
+function bokTest(it){const LA=it.lifeArray||it.lifeNmArray||"",TA=it.trgterIndvdlArray||it.trgterIndvdlNmArray||"";
+  const life=LA.split(",").map(nz).filter(Boolean),tg=TA.split(",").map(nz).filter(Boolean);
   return p=>{const r=[];
-    if(life.length&&!LIFE_ALL.every(x=>life.includes(x))){const st=stagesOf(p);r.push([life.some(x=>st.has(x)),(it.lifeArray||"")+" 대상"])}
+    if(life.length&&!LIFE_ALL.every(x=>life.includes(x))){const st=stagesOf(p);r.push([life.some(x=>st.has(x)),LA+" 대상"])}
     if(tg.length&&tg.length<6){const vs=tg.map(t=>/저소득/.test(t)?(p.inc===0?"?":p.inc<=60?true:p.inc<=100?"?":false):/장애/.test(t)?!!p.dis:/다자녀/.test(t)?p.kids>=2:/한부모|조손/.test(t)?p.single:"?");
-      r.push([vs.includes(true)?true:vs.includes("?")?"?":false,(it.trgterIndvdlArray||"")+" 대상"])}
+      r.push([vs.includes(true)?true:vs.includes("?")?"?":false,TA+" 대상"])}
     return r.length?r:[["?","복지로에서 지원 대상 확인"]]}}
 function buildBok(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)));let n=0;
   for(const it of (j.items||[])){if(!it.servNm||have.has(base(it.servNm)))continue;have.add(base(it.servNm));n++;
@@ -545,6 +546,18 @@ function buildBok(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)))
       per:{text:it.sprtCycNm?`지원 주기: ${it.sprtCycNm} · 신청 시기는 복지로에서 확인`:"신청 시기는 복지로에서 확인"},asset:"",
       api:{src:"복지로",tel:it.rprsCtadr,url:it.servDtlLink,summary:it.servDgst,field:it.intrsThemaArray,target:"",criteria:""}})}
   $("apiinfo").textContent+=` · 복지로 ${n.toLocaleString()}건 추가`;render()}
+// ── 복지로 지자체 복지서비스 (data/local.json, 대구·경북만) ──
+function buildLocal(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)));let n=0;
+  for(const it of (j.items||[])){const nm=it.servNm;if(!nm)continue;
+    const ct=it.ctpvNm||"",reg=ct.startsWith("대구")?"대구":ct.startsWith("경")?"경북":null;if(!reg)continue;
+    const sg=(SGG[reg]||[]).find(g=>(it.sggNm||"").startsWith(g))||"";
+    const key=base(nm)+"|"+sg;if(have.has(base(nm))||have.has(key))continue;have.add(key);n++;
+    const bt=bokTest(it);
+    APIITEMS.push({name:nm,reg,type:kindOf(it.srvPvsnNm),org:[it.ctpvNm,it.sggNm,it.bizChrDeptNm].filter(Boolean).join(" "),amount:it.servDgst||"",
+      apply:it.aplyMtdNm||"주민센터 · 복지로",test:p=>{const r=bt(p).filter(x=>x[1]!=="복지로에서 지원 대상 확인");if(sg)r.unshift([p.sgg===sg,`${sg} 주민`]);return r.length?r:[["?","복지로에서 지원 대상 확인"]]},
+      views:+it.inqNum||0,per:{text:it.sprtCycNm?`지원 주기: ${it.sprtCycNm} · 신청 시기는 복지로에서 확인`:"신청 시기는 복지로에서 확인"},asset:"",
+      api:{src:"복지로",sgg:sg,tel:it.rprsCtadr||"",url:it.servDtlLink||"",summary:it.servDgst,field:it.intrsThemaNmArray||it.intrsThemaArray||"",target:"",criteria:""}})}
+  $("apiinfo").textContent+=` · 복지로 지자체 ${n.toLocaleString()}건 추가`;render()}
 // ── 온통청년 청년정책 (data/youth.json) ──
 function ymd(s){const m=String(s||"").match(/(20\d\d)[.\-]?(\d\d)[.\-]?(\d\d)/);return m?`${m[1]}-${m[2]}-${m[3]}`:""}
 function youthPer(it){const t=it.aplyYmd||"";const d=[...t.matchAll(/(20\d\d)[.\-]?(\d\d)[.\-]?(\d\d)/g)].map(m=>`${m[1]}-${m[2]}-${m[3]}`);
@@ -575,6 +588,7 @@ function render(){
   const q=($("q").value||"").trim();
   for(const x of P.concat(APIITEMS)){
     if(x.reg!=="전국"&&p.reg!==x.reg)continue;
+    if(x.api&&/테스트|시연|test/i.test(x.name))continue;
     if(q&&!(x.name.includes(q)||(x.api&&((x.api.summary||"").includes(q)||(x.api.field||"").includes(q)))))continue;
     const c=x.test(p);
     if(c.some(([v])=>v===false))continue;
@@ -619,7 +633,8 @@ $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y
 fillSgg("수성구");render();
 fetch("data/benefits.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildApi).catch(()=>{})
   .finally(()=>fetch("data/bokjiro.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildBok).catch(()=>{})
-  .finally(()=>fetch("data/youth.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildYouth).catch(()=>{})));
+  .finally(()=>fetch("data/local.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildLocal).catch(()=>{})
+  .finally(()=>fetch("data/youth.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildYouth).catch(()=>{}))));
 </script>
 
 </body>
