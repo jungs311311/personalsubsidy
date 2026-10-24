@@ -116,6 +116,9 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
 .golist .go small{font-size:11px;font-weight:400;color:var(--muted)}
 .golist .go:hover{border-color:var(--teal)}
 .nolink{font-size:12px;color:var(--muted)}
+.amount.long.open{display:block;-webkit-line-clamp:unset;overflow:visible;white-space:pre-line}
+.expand{align-self:flex-start;font:inherit;font-size:12.5px;font-weight:600;color:var(--teal);background:none;border:0;padding:0;cursor:pointer;margin-top:-4px}
+.more p{white-space:pre-line}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
@@ -687,7 +690,7 @@ function render(){
     return `<article class="card">
       <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${x.api?`<span class="tag t-api">${esc(x.api.src||"보조금24")}</span>`:""}</div>
       <h3>${esc(x.name)}</h3>
-      <div class="amount${x.api?" long":""}">${esc(amt)}</div>
+      <div class="amount${x.api?" long":""}">${esc(amt)}</div>${x.api&&String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}
       ${(()=>{const per=x.per||PER[x.name],st=perState(per);return `<div class="period"><span class="st st-${st.k}">${st.l}</span><span>${esc(per?per.text:"공고 확인")}</span></div>`})()}
       ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
       <ul class="conds">${c.map(([v,l])=>`<li class="${v===true?"ok":"q"}"><i class="dot"></i>${esc(l)}</li>`).join("")}</ul>
@@ -705,7 +708,7 @@ $("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b
 $("region").addEventListener("change",()=>{fillSgg();render()});
 $("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
-$("list").addEventListener("click",e=>{const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=60;render()}});
+$("list").addEventListener("click",e=>{const ex=e.target.closest(".expand");if(ex){const a=ex.previousElementSibling,open=a.classList.toggle("open");ex.textContent=open?"접기 ▴":"전체 보기 ▾";ex.setAttribute("aria-expanded",open);return}const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=60;render()}});
 $("stf").addEventListener("change",e=>{if(e.target.id==="stAll")document.querySelectorAll("#stf input[data-k]").forEach(i=>i.checked=e.target.checked);LIMIT={local:30,nat:30};render()});
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);

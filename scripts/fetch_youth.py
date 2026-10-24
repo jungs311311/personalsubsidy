@@ -120,7 +120,7 @@ def main():
         reg, sgg = region(p.get("zipCd"), (p.get("sprvsnInstCdNm"), p.get("operInstCdNm")))
         if not reg or p.get("lclsfNm") == "참여권리":
             continue
-        it = {k: clip(p.get(k), 260) for k in KEEP if p.get(k) not in (None, "")}
+        it = {k: clip(p.get(k), 800) for k in KEEP if p.get(k) not in (None, "")}
         it["reg"], it["sgg"] = reg, sgg
         items.append(it)
     if not items:
