@@ -30,6 +30,11 @@ jobs:
         env:
           BOKJIRO_KEY: ${{ secrets.BOKJIRO_KEY || secrets.GOV24_KEY || secrets.ODCLOUD_KEY }}
         run: python scripts/fetch_bokjiro.py
+      - name: 온통청년 청년정책 받기 (실패해도 계속)
+        continue-on-error: true
+        env:
+          YOUTH_KEY: ${{ secrets.YOUTH_KEY }}
+        run: python scripts/fetch_youth.py
       - name: 바뀐 게 있으면 저장
         run: |
           git config user.name "subsidy-bot"

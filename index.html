@@ -545,6 +545,28 @@ function buildBok(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)))
       per:{text:it.sprtCycNm?`지원 주기: ${it.sprtCycNm} · 신청 시기는 복지로에서 확인`:"신청 시기는 복지로에서 확인"},asset:"",
       api:{src:"복지로",tel:it.rprsCtadr,url:it.servDtlLink,summary:it.servDgst,field:it.intrsThemaArray,target:"",criteria:""}})}
   $("apiinfo").textContent+=` · 복지로 ${n.toLocaleString()}건 추가`;render()}
+// ── 온통청년 청년정책 (data/youth.json) ──
+function ymd(s){const m=String(s||"").match(/(20\d\d)[.\-]?(\d\d)[.\-]?(\d\d)/);return m?`${m[1]}-${m[2]}-${m[3]}`:""}
+function youthPer(it){const t=it.aplyYmd||"";const d=[...t.matchAll(/(20\d\d)[.\-]?(\d\d)[.\-]?(\d\d)/g)].map(m=>`${m[1]}-${m[2]}-${m[3]}`);
+  if(d.length>=2)return{start:d[0],end:d[1],text:`신청 ${d[0].replace(/-/g,".")} ~ ${d[1].replace(/-/g,".")}`};
+  if(/상시|연중|수시/.test(t+(it.plcyAplyMthdCn||"")))return{always:1,text:"상시"};
+  const e=ymd(it.bizPrdEndYmd);return{end:e||undefined,text:t||(e?`사업기간 ~ ${e.replace(/-/g,".")} · 신청 기간은 공고 확인`:"공고 확인")}}
+function youthKind(it){const s=(it.mclsfNm||"")+" "+(it.plcySprtCn||"");if(/대출|융자|이자/.test(s))return"대출·이자";if(/바우처|이용권|카드/.test(s))return"바우처";if(/만원|원 |수당|장려금|지원금|월세|적금|계좌/.test(s))return"현금";return"서비스"}
+function youthTest(it){return p=>{const r=[];
+  if(it.sgg)r.push([p.sgg===it.sgg,`${it.sgg} 청년`]);
+  const a0=+it.sprtTrgtMinAge||0,a1=+it.sprtTrgtMaxAge||0;
+  if(it.sprtTrgtAgeLmtYn!=="N"&&(a0||a1))r.push([p.age>=(a0||0)&&p.age<=(a1||200),a1?`만 ${a0||0}~${a1}세`:`만 ${a0}세 이상`]);
+  else if(!(a0||a1))r.push([p.age>=19&&p.age<=39?true:"?","청년 (보통 만 19~39세)"]);
+  const mx=+it.earnMaxAmt||0;if(it.earnCndSeCd&&it.earnCndSeCd!=="0043001"){r.push([mx&&!isNaN(p.ann)?p.ann<=mx:"?",mx?`연소득 ${mx.toLocaleString()}만원 이하`:(it.earnEtcCn||"소득 조건 있음 (공고 확인)")])}
+  if(it.addAplyQlfcCndCn)r.push(["?",it.addAplyQlfcCndCn.slice(0,80)]);
+  return r}}
+function buildYouth(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)));let n=0;
+  for(const it of (j.items||[])){if(!it.plcyNm||have.has(base(it.plcyNm)))continue;have.add(base(it.plcyNm));n++;
+    APIITEMS.push({name:it.plcyNm,reg:it.reg,type:youthKind(it),org:it.sprvsnInstCdNm||it.operInstCdNm||"",amount:it.plcySprtCn||it.plcyExplnCn||"",
+      apply:it.plcyAplyMthdCn||"공고 확인",test:youthTest(it),views:+it.inqCnt||0,per:youthPer(it),asset:"",
+      api:{src:"온통청년",sgg:it.sgg,url:it.aplyUrlAddr||it.refUrlAddr1||(it.plcyNo?`https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/${it.plcyNo}`:""),
+        summary:it.plcyExplnCn,field:it.lclsfNm,target:it.addAplyQlfcCndCn||"",criteria:it.earnEtcCn||""}})}
+  $("apiinfo").textContent+=` · 온통청년 ${n.toLocaleString()}건 추가`;render()}
 let LIMIT={local:30,nat:30};
 function render(){
   showInc();
@@ -577,7 +599,7 @@ function render(){
       ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
       <ul class="conds">${c.map(([v,l])=>`<li class="${v===true?"ok":"q"}"><i class="dot"></i>${esc(l)}</li>`).join("")}</ul>
       <div class="meta">${x.org?`<span>기관: ${esc(x.org)}</span>`:""}<span>신청: ${esc(x.apply)}</span>${x.api&&x.api.tel?`<span>문의: ${esc(x.api.tel)}</span>`:""}</div>
-      ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<p><b>대상</b> ${esc(x.api.target)}</p>`:""}${x.api.criteria?`<p><b>선정기준</b> ${esc(x.api.criteria)}</p>`:""}</details>`:""}${x.api&&x.api.url?`<a class="go" href="${esc(x.api.url)}" target="_blank" rel="noopener">${x.api.src==="복지로"?"복지로":"정부24"}에서 자세히 보기 →</a>`:""}
+      ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<p><b>대상</b> ${esc(x.api.target)}</p>`:""}${x.api.criteria?`<p><b>선정기준</b> ${esc(x.api.criteria)}</p>`:""}</details>`:""}${x.api&&x.api.url?`<a class="go" href="${esc(x.api.url)}" target="_blank" rel="noopener">${x.api.src==="복지로"?"복지로":x.api.src==="온통청년"?"온통청년":"정부24"}에서 자세히 보기 →</a>`:""}
     </article>`};
   const local=shown.filter(h=>h.x.reg!=="전국"), nat=shown.filter(h=>h.x.reg==="전국");
   const localName=p.reg==="기타"?"대구·경북":p.reg+" "+p.sgg;
@@ -596,7 +618,8 @@ $("f").addEventListener("submit",e=>e.preventDefault());
 $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);
 fillSgg("수성구");render();
 fetch("data/benefits.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildApi).catch(()=>{})
-  .finally(()=>fetch("data/bokjiro.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildBok).catch(()=>{}));
+  .finally(()=>fetch("data/bokjiro.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildBok).catch(()=>{})
+  .finally(()=>fetch("data/youth.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildYouth).catch(()=>{})));
 </script>
 
 </body>
