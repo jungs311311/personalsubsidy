@@ -496,23 +496,30 @@ function isDup(name){return MANUAL.has(base(name))}
 function kindOf(k){k=k||"";if(/감면/.test(k))return"감면·할인";if(/융자|대출/.test(k))return"대출·이자";if(/이용권|바우처/.test(k))return"바우처";if(/현금/.test(k))return"현금";return"서비스"}
 const INC_LAB={JA0201:"50% 이하",JA0202:"51~75%",JA0203:"76~100%",JA0204:"101~200%",JA0205:"200% 초과"};
 const incCode=p=>p.inc===0?null:p.inc<=50?"JA0201":p.inc<=75?"JA0202":p.inc<=100?"JA0203":p.inc<=200?"JA0204":"JA0205";
-function grp(list,on,fn,label){const ks=list.filter(k=>on.has(k));if(!ks.length)return null;const vs=ks.map(fn);
+// 한 묶음의 칸이 "전부" 체크된 경우: 다른 묶음도 전부 체크된 사업(=누구나)이면 제한 없음으로 보고,
+// 그 묶음만 전부 체크된 사업(예: 임신·출산 칸만 전부)이면 그 대상 전용으로 봅니다.
+const G_LIFE=["JA0301","JA0302","JA0303"],G_JOB=["JA0313","JA0314","JA0315","JA0316","JA0317","JA0318","JA0319","JA0320","JA0326","JA0327"],G_SP=["JA0328","JA0329","JA0330"];
+let OPEN_ALL=false;
+function grp(list,on,fn,label){const ks=list.filter(k=>on.has(k));if(!ks.length||(ks.length===list.length&&OPEN_ALL))return null;const vs=ks.map(fn);
   const v=vs.includes(true)?true:(vs.includes("?")?"?":false);return[v,label(ks)]}
 const NAMES={JA0301:"예비부모·난임",JA0302:"임산부",JA0303:"출산·입양",JA0313:"농업인",JA0314:"어업인",JA0315:"축산업인",JA0316:"임업인",JA0317:"초등학생",JA0318:"중학생",JA0319:"고등학생",JA0320:"대학생",JA0326:"직장인",JA0327:"구직자·실업자",JA0328:"장애인",JA0329:"국가보훈대상자",JA0330:"질병·질환자",JA0401:"다문화가족",JA0402:"북한이탈주민",JA0403:"한부모·조손가정",JA0404:"1인 가구",JA0411:"다자녀 가구",JA0412:"무주택 세대",JA0413:"신규 전입",JA0414:"확대가족"};
 const lab=ks=>ks.map(k=>NAMES[k]).join(" · ")+" 대상";
-function apiTest(it){const c=it.cond||{},on=new Set(c.on||[]);return p=>{const r=[];
-  if(it.sgg){const ok=p.sgg&&(it.sgg.includes(p.sgg)||p.sgg.includes(it.sgg));r.push([!!ok,`${it.sgg} 주민`])}
-  if(c.JA0110!=null||c.JA0111!=null){const a0=c.JA0110??0,a1=c.JA0111??200;r.push([p.age>=a0&&p.age<=a1,a1>=120?`만 ${a0}세 이상`:`만 ${a0}~${a1}세`])}
+function apiTest(it){const c=it.cond||{},on=new Set(c.on||[]);
+  const full=[G_LIFE,G_JOB,G_SP].filter(g=>g.every(k=>on.has(k))).length;
+  return p=>{const r=[];OPEN_ALL=full>=2||on.has("JA0322");
+  const realSgg=(SGG[it.reg==="대구"?"대구":"경북"]||[]).find(g=>it.sgg&&it.sgg.startsWith(g));
+  if(it.reg!=="전국"&&realSgg)r.push([p.sgg===realSgg,`${realSgg} 주민`]);
+  if((c.JA0110!=null||c.JA0111!=null)&&!((c.JA0110??0)<=0&&(c.JA0111??200)>=120)){const a0=c.JA0110??0,a1=c.JA0111??200;r.push([p.age>=a0&&p.age<=a1,a1>=120?`만 ${a0}세 이상`:`만 ${a0}~${a1}세`])}
   const inc=Object.keys(INC_LAB).filter(k=>on.has(k));
   if(inc.length&&inc.length<5){const my=incCode(p);r.push([my?inc.includes(my):"?","중위소득 "+inc.map(k=>INC_LAB[k]).join(", ")])}
-  const g1=grp(["JA0301","JA0302","JA0303"],on,k=>k==="JA0302"?p.preg:k==="JA0303"?(p.kids>=1&&p.young===0):(p.preg?true:"?"),lab);if(g1)r.push(g1);
+  const g1=grp(["JA0301","JA0302","JA0303"],on,k=>k==="JA0302"?p.preg:k==="JA0303"?(p.kids>=1&&p.young===0):(p.preg?true:(p.age>=19&&p.age<=49&&!p.single?"?":false)),lab);if(g1)r.push(g1);
   if(!on.has("JA0322")){const g2=grp(["JA0313","JA0314","JA0315","JA0316","JA0317","JA0318","JA0319","JA0320","JA0326","JA0327"],on,
     k=>k==="JA0326"?p.job==="재직":k==="JA0327"?(p.job==="구직 중"||p.quit):["JA0317","JA0318","JA0319","JA0320"].includes(k)?(p.job==="학생"||(p.kids>=1&&p.young>=6&&p.young<=18)?"?":false):"?",lab);if(g2)r.push(g2)}
   if(!on.has("JA0410")){const g3=grp(["JA0401","JA0402","JA0403","JA0404","JA0411","JA0412","JA0413","JA0414"],on,
     k=>k==="JA0403"?p.single:k==="JA0404"?p.hh===1:k==="JA0411"?p.kids>=2:k==="JA0412"?noHome(p):"?",lab);if(g3)r.push(g3)}
-  const g4=grp(["JA0328","JA0329","JA0330"],on,k=>k==="JA0328"?!!p.dis:"?",lab);if(g4)r.push(g4);
+  const g4=(on.has("JA0410")||on.has("JA0322"))?null:grp(["JA0328","JA0329","JA0330"],on,k=>k==="JA0328"?!!p.dis:"?",lab);if(g4)r.push(g4);
   return r.length?r:[["?","공고의 지원 대상·선정기준 확인"]];}}
-function apiPer(t){t=t||"";if(/상시/.test(t))return{always:1,text:t};
+function apiPer(t){t=t||"";if(/상시|연중|별도의 신청절차가 없음|수시/.test(t))return{always:1,text:t};
   const d=[...t.matchAll(/(20\d\d)\s*[.\-년]\s*(\d{1,2})\s*[.\-월]\s*(\d{1,2})/g)].map(m=>`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`);
   if(d.length>=2)return{start:d[0],end:d[1],text:t};if(d.length===1&&/까지/.test(t))return{end:d[0],text:t};return{text:t||"공고 확인"}}
 function buildApi(j){APIUPDATED=j.updated||"";APIITEMS=(j.items||[]).filter(it=>!isDup(it.name)).map(it=>({
@@ -545,7 +552,7 @@ function render(){
   const card=({x,c})=>{
     const amt=typeof x.amount==="function"?x.amount(p):x.amount;
     return `<article class="card">
-      <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${x.api?`<span class="tag t-api">보조금24</span>`:""}</div>
+      <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${x.api?`<span class="tag t-api">보조금24</span>`:""}</div>
       <h3>${esc(x.name)}</h3>
       <div class="amount">${esc(amt)}</div>
       ${(()=>{const per=x.per||PER[x.name],st=perState(per);return `<div class="period"><span class="st st-${st.k}">${st.l}</span><span>${esc(per?per.text:"공고 확인")}</span></div>`})()}

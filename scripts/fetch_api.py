@@ -42,17 +42,39 @@ def fetch_all(key, part):
         time.sleep(0.3)
 
 
+DG_SGG = {"수성": "수성구", "달서": "달서구", "달성": "달성군", "군위": "군위군"}
+GB_SGG = {k: v for k, v in (
+    ("포항", "포항시"), ("경주", "경주시"), ("김천", "김천시"), ("안동", "안동시"), ("구미", "구미시"), ("영주", "영주시"),
+    ("영천", "영천시"), ("상주", "상주시"), ("문경", "문경시"), ("경산", "경산시"), ("의성", "의성군"), ("청송", "청송군"),
+    ("영양", "영양군"), ("영덕", "영덕군"), ("청도", "청도군"), ("고령", "고령군"), ("성주", "성주군"), ("칠곡", "칠곡군"),
+    ("예천", "예천군"), ("봉화", "봉화군"), ("울진", "울진군"), ("울릉", "울릉군"))}
+OTHER = ("서울", "부산", "인천", "광주", "대전", "울산", "세종", "경기", "강원", "충청", "충북", "충남", "전라", "전북", "전남",
+         "경상남도", "경남", "제주", "수원", "성남", "고양", "용인", "부천", "안산", "안양", "화성", "평택", "의정부", "시흥", "파주",
+         "김포", "광명", "하남", "춘천", "원주", "강릉", "청주", "충주", "천안", "아산", "공주", "전주", "군산", "익산", "목포", "여수",
+         "순천", "창원", "김해", "진주", "양산", "거제", "통영", "서귀포")
+
+
 def region_of(svc):
+    """(지역, 시군구) 반환. 전국 사업이면 ("전국",""), 대구·경북이 아닌 지역 사업이면 (None, None)."""
     org = (svc.get("소관기관명") or "").strip()
     typ = (svc.get("소관기관유형") or "").strip()
+    name = (svc.get("서비스명") or "").strip()
     if org.startswith("대구"):
-        return "대구", org.replace("대구광역시", "").replace("교육청", "").strip()
+        rest = org.replace("대구광역시", "").replace("교육청", "").strip()
+        return "대구", rest
     if org.startswith("경상북도") or org.startswith("경북"):
-        return "경북", org.replace("경상북도", "").replace("교육청", "").strip()
-    if "지방자치단체" in typ or "교육청" in typ or "시도" in typ or "시군구" in typ:
-        return None, None  # 다른 지역
-    # 중앙행정기관·공공기관 등 = 전국
-    if any(org.startswith(x) for x in ("서울", "부산", "인천", "광주", "대전", "울산", "세종", "경기", "강원", "충청", "충북", "충남", "전라", "전북", "전남", "경상남도", "경남", "제주")):
+        rest = org.replace("경상북도", "").replace("교육청", "").strip()
+        return "경북", rest
+    # 산하 재단·공사 등: 기관명에 지역 이름이 들어 있는 경우
+    for k, v in DG_SGG.items():
+        if k in org:
+            return "대구", v
+    for k, v in GB_SGG.items():
+        if k in org:
+            return "경북", v
+    if any(x in org for x in OTHER):
+        return None, None
+    if any(x in typ for x in ("지방자치단체", "교육청", "시도", "시군구", "지방")):
         return None, None
     return "전국", ""
 
@@ -112,6 +134,7 @@ def main():
             "reg": reg,
             "sgg": sgg,
             "org": clip(s.get("소관기관명"), 40),
+            "orgType": s.get("소관기관유형") or "",
             "kind": s.get("지원유형") or "",
             "field": s.get("서비스분야") or "",
             "summary": clip(s.get("서비스목적요약"), 160),
@@ -136,6 +159,11 @@ def main():
     for it in items:
         by[it["reg"]] = by.get(it["reg"], 0) + 1
     print(f"저장 완료: {len(items)}건 {by} (전체 {len(services)}건 중)")
+    types = {}
+    for sv in services:
+        t = sv.get("소관기관유형") or "(없음)"
+        types[t] = types.get(t, 0) + 1
+    print("소관기관유형:", types)
 
 
 if __name__ == "__main__":
