@@ -2,7 +2,7 @@ name: 보조금24 데이터 매일 갱신
 
 on:
   schedule:
-    - cron: "7 18 * * *"   # 매일 새벽 3시 7분 (한국시간)
+    - cron: "0 21 * * *"   # 매일 새벽 6시 (한국시간, GitHub는 UTC 기준이라 21시)
   workflow_dispatch: {}      # Actions 탭에서 "Run workflow"로 바로 실행 가능
 
 permissions:
