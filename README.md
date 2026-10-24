@@ -8,7 +8,7 @@
 - `.github/workflows/update-data.yml` — 매일 자동 실행 설정
 
 ## 설정
-1. Settings → Secrets and variables → Actions → `ODCLOUD_KEY` 에 공공데이터포털 일반 인증키
+1. Settings → Secrets and variables → Actions → `GOV24_KEY` 에 공공데이터포털 일반 인증키
 2. Settings → Pages → Branch: `main` / `(root)`
 
 입력한 개인정보는 저장하지 않고 브라우저 안에서만 계산합니다. 실제 자격은 각 기관 공고로 확인해야 합니다.

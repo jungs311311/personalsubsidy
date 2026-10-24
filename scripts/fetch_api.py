@@ -4,7 +4,7 @@
 - 전국(중앙부처·공공기관) + 대구광역시 + 경상북도 사업만 남깁니다.
 - 지원조건 코드(JA....)를 서비스별로 붙여서 페이지가 자동 판정할 수 있게 합니다.
 
-인증키는 환경변수 ODCLOUD_KEY 에서 읽습니다 (GitHub Secrets).
+인증키는 환경변수 GOV24_KEY 에서 읽습니다 (GitHub Secrets).
 """
 import json, os, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timezone, timedelta
@@ -89,9 +89,9 @@ def compact_cond(c):
 
 
 def main():
-    key = os.environ.get("ODCLOUD_KEY", "").strip()
+    key = os.environ.get("GOV24_KEY", "").strip()
     if not key:
-        sys.exit("ODCLOUD_KEY 환경변수가 없습니다 (GitHub Secrets 확인).")
+        sys.exit("GOV24_KEY가 없습니다. GitHub Settings → Secrets → Actions 에 GOV24_KEY 를 넣어 주세요.")
     if "%" in key:
         key = urllib.parse.unquote(key)
 

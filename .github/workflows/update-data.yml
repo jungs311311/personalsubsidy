@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
       - name: 데이터 받기
         env:
-          ODCLOUD_KEY: ${{ secrets.ODCLOUD_KEY }}
+          GOV24_KEY: ${{ secrets.GOV24_KEY }}
         run: python scripts/fetch_api.py
       - name: 바뀐 게 있으면 저장
         run: |
