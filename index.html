@@ -11,7 +11,7 @@
 /* Layout: 왼쪽 "내 조건" 패널(고정) + 오른쪽 결과 목록. 휴대폰에서는 위아래로 쌓임 */
 :root{
   --bg:#f5f7f8; --surface:#ffffff; --ink:#17232b; --muted:#5b6a73; --line:#dce3e7;
-  --apple:#c4303b; --apple-soft:#fbe9ea;
+  --apple:#185fa5; --apple-soft:#e6f1fb; --on-apple:#ffffff; --red:#c4303b; --red-soft:#fbe9ea;
   --teal:#1f7a74; --teal-soft:#e2f2f0;
   --gold:#9a6a00; --gold-soft:#fbf1d9;
   --display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
@@ -19,11 +19,11 @@
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#11181d; --surface:#18222a; --ink:#e6edf0; --muted:#9aa9b2; --line:#2a3741;
-  --apple:#ef6b74; --apple-soft:#3a1f23; --teal:#5cc2b9; --teal-soft:#16302e;
+  --apple:#7fb2ec; --apple-soft:#12263d; --on-apple:#0b1a2a; --red:#ef6b74; --red-soft:#3a1f23; --teal:#5cc2b9; --teal-soft:#16302e;
   --gold:#e3b24a; --gold-soft:#33291a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11181d; --surface:#18222a; --ink:#e6edf0; --muted:#9aa9b2; --line:#2a3741;
-  --apple:#ef6b74; --apple-soft:#3a1f23; --teal:#5cc2b9; --teal-soft:#16302e;
+  --apple:#7fb2ec; --apple-soft:#12263d; --on-apple:#0b1a2a; --red:#ef6b74; --red-soft:#3a1f23; --teal:#5cc2b9; --teal-soft:#16302e;
   --gold:#e3b24a; --gold-soft:#33291a; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
@@ -39,7 +39,7 @@ header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
 .gobar{display:none}
 @media (max-width:860px){
   .gobar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;justify-content:center;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(transparent,var(--bg) 35%)}
-  .gobar button{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:12px;padding:12px 18px;width:100%;max-width:480px;background:var(--apple);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  .gobar button{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:12px;padding:12px 18px;width:100%;max-width:480px;background:var(--apple);color:var(--on-apple);cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.18)}
   .gobar[hidden]{display:none}
   body{padding-bottom:84px}
 }
@@ -84,7 +84,7 @@ select:focus,input:focus,button:focus-visible{outline:2px solid var(--teal);outl
 .st{align-self:flex-start;font-size:12px;font-weight:700;border-radius:5px;padding:1px 7px}
 .st-open{background:var(--teal-soft);color:var(--teal)}
 .st-soon{background:var(--gold-soft);color:var(--gold)}
-.st-closed{background:var(--apple-soft);color:var(--apple)}
+.st-closed{background:var(--red-soft);color:var(--red)}
 .st-chk{border:1px solid var(--line);color:var(--muted)}
 .asof{margin:0 0 4px!important;font-size:12.5px;color:var(--teal)!important;font-weight:600}
 .split{display:flex;gap:8px;width:100%;margin-bottom:4px}
@@ -130,7 +130,7 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
 .more div{margin-top:6px}
 .chiprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%}
 .rowlab{font-size:12px;font-weight:700;color:var(--muted);width:34px;flex:none}
-.chip.tp[aria-pressed="true"]{background:var(--apple);border-color:var(--apple);color:#fff}
+.chip.tp[aria-pressed="true"]{background:var(--apple);border-color:var(--apple);color:var(--on-apple)}
 .okonly{font-size:13px;font-weight:600;color:var(--ink);margin-right:6px}
 .t-tp{background:transparent;color:var(--muted);border:1px dashed var(--line)}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
