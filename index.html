@@ -139,7 +139,7 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
       <div class="row2">
         <div class="field"><label for="age">만 나이</label><input id="age" type="number" min="0" max="110" value="30"></div>
         <div class="field"><label for="job">하는 일</label>
-          <select id="job"><option>재직</option><option>구직 중</option><option>자영업</option><option>학생</option><option>기타</option></select></div>
+          <select id="job"><option>재직</option><option>구직 중</option><option>자영업</option><option>농업·어업</option><option>학생</option><option>기타</option></select></div>
       </div>
       <label class="check"><input id="quit" type="checkbox"> 최근 1년 안에 회사를 그만둠</label>
       <label class="check" style="padding-left:26px"><input id="invol" type="checkbox"> 계약만료·권고사직·회사 사정 때문에</label>
@@ -616,6 +616,22 @@ function buildYouth(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)
       api:{src:"온통청년",sgg:it.sgg,url:it.aplyUrlAddr||it.refUrlAddr1||(it.plcyNo?`https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/${it.plcyNo}`:""),
         summary:it.plcyExplnCn,field:it.lclsfNm,target:it.addAplyQlfcCndCn||"",criteria:it.earnEtcCn||""}})}
   $("apiinfo").textContent+=` · 온통청년 ${n.toLocaleString()}건 추가`;render()}
+// ── 공고 문구로 추가 판정 (API 데이터에 코드가 없는 조건) ──
+function textConds(x,p){const a=x.api||{},nm=x.name||"",all=[nm,x.amount,a.target,a.criteria,a.summary].join(" "),r=[];
+  const farm=/농기계|농지|영농|농업인|농가|귀농|청년농|스마트팜|어선|어업|어구|수산|양식|축산|한우|임업|산림|과수|벼|농작물|농산물/.test(nm);
+  if(farm)r.push([p.job==="농업·어업"?true:(/귀농|귀어|귀촌/.test(nm)?"?":false),"농업·어업인 (공고 문구)"]);
+  const rentHouse=!farm&&/(공공임대|매입임대|전세임대|임대주택|행복주택|청년희망주택|임대료 지원|임대보증금|주거비)/.test(nm);
+  if(/무주택/.test(all)||rentHouse)r.push([noHome(p),"무주택자 (공고 문구)"]);
+  else if(/(전세|월세|전월세|전·월세|임차보증금|임차료)/.test(nm))r.push([p.house==="자가"?false:true,"전·월세 사는 사람 (공고 문구)"]);
+  if(/(주택\s?구입|내\s?집\s?마련|구입자금)/.test(nm))r.push([p.house==="자가"?"?":true,"집 살 사람 (공고 문구)"]);
+  if(/임산부|임신부/.test(nm))r.push([p.preg?true:(p.kids>=1&&p.young===0?"?":false),"임신 중 (공고 문구)"]);
+  if(/한부모|미혼모|미혼부|조손/.test(nm))r.push([p.single?true:false,"한부모·조손 가정 (공고 문구)"]);
+  if(/장애인|장애아|발달장애/.test(nm))r.push([p.dis?true:false,"장애인 (공고 문구)"]);
+  if(/다자녀|다둥이|셋째|세 자녀/.test(nm))r.push([p.kids>=2,"자녀 2명 이상 (공고 문구)"]);
+  if(/어르신|노인|경로/.test(nm)&&!/청년|아동/.test(nm))r.push([p.age>=60?true:(p.age>=50?"?":false),"어르신 (공고 문구)"]);
+  if(/신혼/.test(nm))r.push([married(p)?true:"?","신혼부부 (공고 문구)"]);
+  if(/보훈|국가유공자|참전/.test(nm))r.push(["?","국가보훈대상자 (공고 문구)"]);
+  return r}
 let LIMIT={local:30,nat:30};
 function render(){
   showInc();
@@ -626,7 +642,7 @@ function render(){
     if(x.reg!=="전국"&&p.reg!==x.reg)continue;
     if(x.api&&/테스트|시연|test/i.test(x.name))continue;
     if(q&&!(x.name.includes(q)||(x.api&&((x.api.summary||"").includes(q)||(x.api.field||"").includes(q)))))continue;
-    const c=x.test(p);
+    const c=x.api?x.test(p).concat(textConds(x,p)):x.test(p);
     if(c.some(([v])=>v===false))continue;
     hits.push({x,c,likely:c.every(([v])=>v===true)});
   }
