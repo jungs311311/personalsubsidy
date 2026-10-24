@@ -119,6 +119,15 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
 .amount.long.open{display:block;-webkit-line-clamp:unset;overflow:visible;white-space:pre-line}
 .expand{align-self:flex-start;font:inherit;font-size:12.5px;font-weight:600;color:var(--teal);background:none;border:0;padding:0;cursor:pointer;margin-top:-4px}
 .more p{white-space:pre-line}
+.amount.long{color:var(--ink);font-weight:500}
+.amount.long .tidy,.rawtxt .tidy,.more .tidy{margin:2px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:2px}
+.tidy li.note{list-style:none;margin-left:-16px;color:var(--muted);font-size:12.5px}
+.sum{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0;font-size:14px;line-height:1.5}
+.sum dt{font-size:12px;font-weight:700;color:var(--apple);padding-top:2px;white-space:nowrap}
+.sum dd{margin:0;min-width:0}
+.raw{font-size:12.5px;color:var(--muted)} .raw summary{cursor:pointer;color:var(--teal);font-weight:600}
+.rawtxt{margin-top:6px;white-space:normal}
+.more div{margin-top:6px}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
@@ -568,7 +577,7 @@ function apiPer(t){t=t||"";if(/상시|연중|별도의 신청절차가 없음|�
   if(d.length>=2)return{start:d[0],end:d[1],text:t};if(d.length===1&&/까지/.test(t))return{end:d[0],text:t};return{text:t||"공고 확인"}}
 function buildApi(j){APIUPDATED=j.updated||"";APIITEMS=(j.items||[]).filter(it=>!isDup(it.name)).map(it=>({
   name:it.name,reg:it.reg,type:kindOf(it.kind),org:it.org,amount:it.content||it.summary,apply:[it.how,it.recv].filter(Boolean).join(" · ")||"공고 확인",
-  test:apiTest(it),api:it,views:it.views||0,per:apiPer(it.deadline),
+  test:apiTest(it),api:it,sid:"g:"+it.id,views:it.views||0,per:apiPer(it.deadline),
   asset:/재산|소득인정액/.test((it.criteria||"")+(it.target||""))?"공고 선정기준에 재산(소득인정액) 기준이 있습니다. 연봉만으로 판단하면 안 됩니다.":""}));
   $("apiinfo").textContent=` · 보조금24 데이터 ${APIITEMS.length.toLocaleString()}건 (${APIUPDATED} 갱신)`;render()}
 // ── 복지로 중앙부처 복지서비스 (data/bokjiro.json) ──
@@ -586,7 +595,7 @@ function bokTest(it){const LA=it.lifeArray||it.lifeNmArray||"",TA=it.trgterIndvd
 function buildBok(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)));let n=0;
   for(const it of (j.items||[])){if(!it.servNm||have.has(base(it.servNm)))continue;have.add(base(it.servNm));n++;
     APIITEMS.push({name:it.servNm,reg:"전국",type:kindOf(it.srvPvsnNm),org:[it.jurMnofNm,it.jurOrgNm].filter(Boolean).join(" "),amount:it.servDgst,
-      apply:"복지로"+(it.onapPsbltYn==="Y"?" (온라인 신청 가능)":"")+" · 주민센터",test:bokTest(it),views:+it.inqNum||0,
+      apply:"복지로"+(it.onapPsbltYn==="Y"?" (온라인 신청 가능)":"")+" · 주민센터",test:bokTest(it),sid:"b:"+it.servId,views:+it.inqNum||0,
       per:{text:it.sprtCycNm?`지원 주기: ${it.sprtCycNm} · 신청 시기는 복지로에서 확인`:"신청 시기는 복지로에서 확인"},asset:"",
       api:{src:"복지로",tel:it.rprsCtadr,url:it.servDtlLink,summary:it.servDgst,field:it.intrsThemaArray,target:"",criteria:""}})}
   $("apiinfo").textContent+=` · 복지로 ${n.toLocaleString()}건 추가`;render()}
@@ -599,7 +608,7 @@ function buildLocal(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)
     const bt=bokTest(it);
     APIITEMS.push({name:nm,reg,type:kindOf(it.srvPvsnNm),org:[it.ctpvNm,it.sggNm,it.bizChrDeptNm].filter(Boolean).join(" "),amount:it.servDgst||"",
       apply:it.aplyMtdNm||"주민센터 · 복지로",test:p=>{const r=bt(p).filter(x=>x[1]!=="복지로에서 지원 대상 확인");if(sg)r.unshift([p.sgg===sg,`${sg} 주민`]);return r.length?r:[["?","복지로에서 지원 대상 확인"]]},
-      views:+it.inqNum||0,per:{text:it.sprtCycNm?`지원 주기: ${it.sprtCycNm} · 신청 시기는 복지로에서 확인`:"신청 시기는 복지로에서 확인"},asset:"",
+      sid:"l:"+it.servId,views:+it.inqNum||0,per:{text:it.sprtCycNm?`지원 주기: ${it.sprtCycNm} · 신청 시기는 복지로에서 확인`:"신청 시기는 복지로에서 확인"},asset:"",
       api:{src:"복지로",sgg:sg,tel:it.rprsCtadr||"",url:it.servDtlLink||"",summary:it.servDgst,field:it.intrsThemaNmArray||it.intrsThemaArray||"",target:"",criteria:""}})}
   $("apiinfo").textContent+=` · 복지로 지자체 ${n.toLocaleString()}건 추가`;render()}
 // ── 온통청년 청년정책 (data/youth.json) ──
@@ -620,7 +629,7 @@ function youthTest(it){return p=>{const r=[];
 function buildYouth(j){const have=new Set(P.concat(APIITEMS).map(x=>base(x.name)));let n=0;
   for(const it of (j.items||[])){if(!it.plcyNm||have.has(base(it.plcyNm)))continue;have.add(base(it.plcyNm));n++;
     APIITEMS.push({name:it.plcyNm,reg:it.reg,type:youthKind(it),org:it.sprvsnInstCdNm||it.operInstCdNm||"",amount:it.plcySprtCn||it.plcyExplnCn||"",
-      apply:it.plcyAplyMthdCn||"공고 확인",test:youthTest(it),views:+it.inqCnt||0,per:youthPer(it),asset:"",
+      apply:it.plcyAplyMthdCn||"공고 확인",test:youthTest(it),sid:"y:"+it.plcyNo,views:+it.inqCnt||0,per:youthPer(it),asset:"",
       api:{src:"온통청년",sgg:it.sgg,url:it.aplyUrlAddr||it.refUrlAddr1||(it.plcyNo?`https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/${it.plcyNo}`:""),
         summary:it.plcyExplnCn,field:it.lclsfNm,target:it.addAplyQlfcCndCn||"",criteria:it.earnEtcCn||""}})}
   $("apiinfo").textContent+=` · 온통청년 ${n.toLocaleString()}건 추가`;render()}
@@ -658,6 +667,15 @@ function linksOf(x){const out=[],seen=new Set();const add=(label,url)=>{const h=
   return out.slice(0,3)}
 function linksHtml(x){const l=linksOf(x);if(!l.length)return `<div class="golist"><span class="nolink">온라인 신청 사이트 없음 · 주민센터·담당 기관 방문</span></div>`;
   return `<div class="golist">${l.map(o=>`<a class="go" href="${esc(o.url)}" target="_blank" rel="noopener"><span>${esc(o.label)} ↗</span><small>${esc(o.h)}</small></a>`).join("")}</div>`}
+// ── C. 공고 원문 줄 정리: ○ ㅇ - ※ · ① 같은 기호를 기준으로 줄을 나눔 ──
+function tidy(t){t=String(t||"").replace(/\|\|/g," · ").trim();if(!t)return"";
+  const parts=t.split(/\s*(?:^|\s)(?=[○ㅇ◦•▶▷■□◎※]|-\s|\d\)\s|[①-⑳])/).map(x=>x.replace(/^[○ㅇ◦•▶▷■□◎\-]\s*/,"").trim()).filter(Boolean);
+  if(parts.length<=1)return esc(t);
+  return "<ul class='tidy'>"+parts.map(x=>`<li${/^※/.test(x)?" class='note'":""}>${esc(x.replace(/^※\s*/,"※ "))}</li>`).join("")+"</ul>"}
+// ── A. 요약 (data/summaries.json · 매일 9시 작업이 조회수 순으로 채움) ──
+let SUM={};
+function sumHtml(x){const s=x.sid&&SUM[x.sid];if(!s)return"";
+  return `<dl class="sum">${s.who?`<dt>누가</dt><dd>${esc(s.who)}</dd>`:""}${s.what?`<dt>무엇을</dt><dd>${esc(s.what)}</dd>`:""}${s.how?`<dt>어떻게</dt><dd>${esc(s.how)}</dd>`:""}</dl>`}
 let LIMIT={local:30,nat:30};
 function render(){
   showInc();
@@ -690,12 +708,14 @@ function render(){
     return `<article class="card">
       <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${x.api?`<span class="tag t-api">${esc(x.api.src||"보조금24")}</span>`:""}</div>
       <h3>${esc(x.name)}</h3>
-      <div class="amount${x.api?" long":""}">${esc(amt)}</div>${x.api&&String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}
+      ${x.api&&SUM[x.sid]?sumHtml(x)+`<details class="raw"><summary>공고 원문 보기</summary><div class="rawtxt">${tidy(amt)}</div></details>`
+        :x.api?`<div class="amount long">${tidy(amt)}</div>${String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}`
+        :`<div class="amount">${esc(amt)}</div>`}
       ${(()=>{const per=x.per||PER[x.name],st=perState(per);return `<div class="period"><span class="st st-${st.k}">${st.l}</span><span>${esc(per?per.text:"공고 확인")}</span></div>`})()}
       ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
       <ul class="conds">${c.map(([v,l])=>`<li class="${v===true?"ok":"q"}"><i class="dot"></i>${esc(l)}</li>`).join("")}</ul>
-      <div class="meta">${x.org?`<span>기관: ${esc(x.org)}</span>`:""}<span>신청: ${esc(x.apply)}</span>${x.api&&x.api.tel?`<span>문의: ${esc(x.api.tel)}</span>`:""}</div>
-      ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<p><b>대상</b> ${esc(x.api.target)}</p>`:""}${x.api.criteria?`<p><b>선정기준</b> ${esc(x.api.criteria)}</p>`:""}</details>`:""}${linksHtml(x)}
+      <div class="meta">${x.org?`<span>기관: ${esc(x.org)}</span>`:""}<span>신청: ${esc(String(x.apply).replace(/\|\|/g," · "))}</span>${x.api&&x.api.tel?`<span>문의: ${esc(String(x.api.tel).replace(/\|\|/g," · "))}</span>`:""}</div>
+      ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<div><b>대상</b>${tidy(x.api.target)}</div>`:""}${x.api.criteria?`<div><b>선정기준</b>${tidy(x.api.criteria)}</div>`:""}</details>`:""}${linksHtml(x)}
     </article>`};
   const local=shown.filter(h=>h.x.reg!=="전국"), nat=shown.filter(h=>h.x.reg==="전국");
   const localName=p.reg==="기타"?"대구·경북":p.reg+" "+p.sgg;
@@ -717,6 +737,7 @@ fetch("data/benefits.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.rej
   .finally(()=>fetch("data/bokjiro.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildBok).catch(()=>{})
   .finally(()=>fetch("data/local.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildLocal).catch(()=>{})
   .finally(()=>fetch("data/youth.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildYouth).catch(()=>{}))));
+fetch("data/summaries.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(j=>{SUM=j.items||{};render()}).catch(()=>{});
 </script>
 
 <div class="gobar" id="gobar"><button type="button" id="gobtn">결과 보기</button></div>
