@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="나이·가족·집·소득을 고르면 받을 수 있는 전국·대구·경북 개인 지원금을 한 번에 보여줍니다.">
+<title>전국·대구경북 지원금 찾기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 왼쪽 "내 조건" 패널(고정) + 오른쪽 결과 목록. 휴대폰에서는 위아래로 쌓임 */
+:root{
+  --bg:#f5f7f8; --surface:#ffffff; --ink:#17232b; --muted:#5b6a73; --line:#dce3e7;
+  --apple:#c4303b; --apple-soft:#fbe9ea;
+  --teal:#1f7a74; --teal-soft:#e2f2f0;
+  --gold:#9a6a00; --gold-soft:#fbf1d9;
+  --display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11181d; --surface:#18222a; --ink:#e6edf0; --muted:#9aa9b2; --line:#2a3741;
+  --apple:#ef6b74; --apple-soft:#3a1f23; --teal:#5cc2b9; --teal-soft:#16302e;
+  --gold:#e3b24a; --gold-soft:#33291a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11181d; --surface:#18222a; --ink:#e6edf0; --muted:#9aa9b2; --line:#2a3741;
+  --apple:#ef6b74; --apple-soft:#3a1f23; --teal:#5cc2b9; --teal-soft:#16302e;
+  --gold:#e3b24a; --gold-soft:#33291a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0;text-wrap:balance}
+header h1 b{color:var(--apple);font-weight:400}
+header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}.grid>section{order:2}.grid>form{order:1}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+@media (min-width:861px){.panel{position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}}
+.panel h2{font-size:13px;letter-spacing:.06em;color:var(--muted);margin:0;font-weight:600}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label,.field .lab{font-size:13px;font-weight:600}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.check{display:flex;gap:8px;align-items:center;font-size:14px}
+.check input{width:18px;height:18px;accent-color:var(--apple)}
+.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.summary{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.summary .big{font-family:var(--display);font-size:30px;line-height:1;margin-right:6px}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+@media (max-width:420px){.list{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:600;border-radius:5px;padding:2px 7px;letter-spacing:.02em}
+.t-전국{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.t-대구{background:var(--apple-soft);color:var(--apple)}
+.t-경북{background:var(--teal-soft);color:var(--teal)}
+.t-type{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.card h3{margin:0;font-size:16.5px;line-height:1.35}
+.amount{font-weight:700;color:var(--apple)}
+.conds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.conds li{display:flex;gap:7px;align-items:baseline}
+.dot{flex:none;width:9px;height:9px;border-radius:50%;transform:translateY(1px)}
+.ok .dot{background:var(--teal)}
+.q .dot{background:transparent;border:2px solid var(--gold)}
+.q{color:var(--gold)}
+.meta{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:2px}
+.status{font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-soft);border-radius:5px;padding:2px 7px;align-self:flex-start}
+.badge-likely{color:var(--teal)}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec-h{margin:0;font-family:var(--display);font-weight:400;font-size:22px;display:flex;align-items:baseline;gap:8px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.sec-h span{font-family:var(--body);font-size:13px;color:var(--muted)}
+.h-local{border-color:var(--apple)} .h-nat{border-color:var(--ink)}
+.period{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px 10px}
+.st{align-self:flex-start;font-size:12px;font-weight:700;border-radius:5px;padding:1px 7px}
+.st-open{background:var(--teal-soft);color:var(--teal)}
+.st-soon{background:var(--gold-soft);color:var(--gold)}
+.st-closed{background:var(--apple-soft);color:var(--apple)}
+.st-chk{border:1px solid var(--line);color:var(--muted)}
+.asof{margin:0 0 4px!important;font-size:12.5px;color:var(--teal)!important;font-weight:600}
+.split{display:flex;gap:8px;width:100%;margin-bottom:4px}
+.sp{flex:1;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-size:14px}
+.sp b{font-family:var(--display);font-weight:400;font-size:22px}
+.sp-l{border-color:var(--apple)} .sp-l b{color:var(--apple)}
+.sp-n{border-color:var(--ink)}
+.sec{scroll-margin-top:12px}
+.incbox{background:var(--teal-soft);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.inc-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px}
+.inc-top b{color:var(--teal);font-size:16px;font-variant-numeric:tabular-nums}
+.bar{position:relative;height:6px;background:var(--surface);border-radius:3px}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--teal);border-radius:3px}
+.bar s{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.5}
+.warn{font-size:12.5px;line-height:1.5;background:var(--gold-soft);color:var(--ink);border-radius:8px;padding:7px 10px}
+.warn b{color:var(--gold);margin-right:4px}
+.t-api{background:var(--gold-soft);color:var(--gold)}
+.more{font-size:12.5px;color:var(--muted)} .more summary{cursor:pointer;color:var(--teal);font-weight:600}
+.more p{margin:6px 0 0} .go{font-size:13px;font-weight:600;color:var(--teal);text-decoration:none}
+.moreBtn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px;cursor:pointer}
+input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span{display:flex;gap:6px;align-items:center}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease both}@keyframes in{from{transform:translateY(4px)}to{transform:none}}}
+</style>
+
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>내 지원금 찾기 <b>전국 + 대구·경북</b></h1>
+    <p class="asof">2026년 10월 기준 · 마지막 확인 <b id="checked"></b><span id="apiinfo"></span></p>
+    <p>나이, 가족, 집, 소득을 고르면 전국 지원과 대구·경북 지역 지원을 현금·바우처·이자지원·감면·서비스 구분 없이 한 번에 보여줍니다.</p>
+  </header>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <h2>내 조건</h2>
+      <div class="row2">
+        <div class="field"><label for="region">사는 곳</label>
+          <select id="region"><option>대구</option><option>경북</option><option>그 외 지역</option></select></div>
+        <div class="field"><label for="sgg">시·군·구</label><select id="sgg"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="age">만 나이</label><input id="age" type="number" min="0" max="110" value="32"></div>
+        <div class="field"><label for="job">하는 일</label>
+          <select id="job"><option>재직</option><option>구직 중</option><option>자영업</option><option>학생</option><option>기타</option></select></div>
+      </div>
+      <label class="check"><input id="quit" type="checkbox"> 최근 1년 안에 회사를 그만둠</label>
+      <label class="check" style="padding-left:26px"><input id="invol" type="checkbox"> 계약만료·권고사직·회사 사정 때문에</label>
+      <div class="field"><label for="dis">장애</label>
+        <select id="dis"><option value="">없음</option><option value="heavy">심한 장애 (예전 1~3급 중복)</option><option value="light">심하지 않은 장애</option></select></div>
+      <div class="field"><label for="marital">결혼</label>
+        <select id="marital"><option>미혼</option><option>결혼 예정</option><option selected>신혼 (7년 이내)</option><option>기혼 (7년 넘음)</option></select></div>
+      <label class="check"><input id="preg" type="checkbox"> 지금 임신 중 (본인 또는 배우자)</label>
+      <label class="check"><input id="single" type="checkbox"> 한부모 가정 (혼자 자녀를 키움)</label>
+      <div class="row2">
+        <div class="field"><label for="kids">자녀 수</label><input id="kids" type="number" min="0" max="10" value="1"></div>
+        <div class="field"><label for="young">막내 만 나이</label><input id="young" type="number" min="0" max="30" value="0"></div>
+      </div>
+      <div class="field"><label for="house">집</label>
+        <select id="house"><option>무주택 · 월세</option><option selected>무주택 · 전세</option><option>무주택 · 부모님과 같이 삶</option><option>자가</option></select></div>
+      <div class="field"><span class="lab">자동차</span>
+        <label class="check"><input id="car" type="checkbox"> 자동차 살 계획 있음</label>
+        <label class="check"><input id="ev" type="checkbox"> 전기차 살 계획 있음</label>
+        <label class="check"><input id="ice" type="checkbox"> 지금 휘발유·경유차 보유</label>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="ann">가구 세전 연소득 (만원)</label><input id="ann" type="number" min="0" step="100" value="5500"></div>
+        <div class="field"><label for="hh">가구원 수</label><input id="hh" type="number" min="1" max="12" placeholder="자동"></div>
+      </div>
+      <span class="hint">부부 연봉을 합친 세전 금액을 넣으세요. 가구원 수는 본인·배우자·자녀로 자동 계산되고, 부모님과 같이 살면 직접 고치면 됩니다.</span>
+      <div class="incbox" id="incbox" aria-live="polite"></div>
+      <h2 style="margin-top:6px">돈 · 신용 · 병원비 <span style="font-weight:400;letter-spacing:0">(장려금·대출·의료비 판정용)</span></h2>
+      <div class="field"><label for="earn">벌이</label>
+        <select id="earn"><option>혼자 벌이 (배우자 소득 없음)</option><option selected>맞벌이</option><option>소득 없음</option></select></div>
+      <div class="field"><label for="asset">가구 재산 (만원)</label><input id="asset" type="number" min="0" step="1000" value="15000"></div>
+      <span class="hint">집·전세보증금·예금·자동차 합계(대출 빼기 전)입니다. 모르면 비워두세요.</span>
+      <div class="field"><label for="credit">신용점수</label>
+        <select id="credit"><option value="mid" selected>보통 이상</option><option value="low">낮은 편 (하위 20% 정도)</option><option value="">잘 모르겠음</option></select></div>
+      <div class="field"><label for="med">올해 병원비 본인부담 합계 (만원)</label><input id="med" type="number" min="0" step="10" value="0">
+        <span class="hint">약값 포함, 비급여는 빼고 계산합니다.</span></div>
+    </form>
+
+    <section style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="summary" id="summary"></div>
+      <input id="q" type="search" placeholder="지원 이름으로 찾기 (예: 월세, 출산, 장학금)" aria-label="지원 이름 검색">
+      <label class="check" style="font-size:13.5px"><input id="openOnly" type="checkbox"> 지금 신청할 수 있는 것만 보기</label>
+      <div class="legend"><span><i class="dot" style="background:var(--teal)"></i>조건 충족</span><span><i class="dot" style="border:2px solid var(--gold)"></i>공고에서 직접 확인 필요</span></div>
+      <div id="list" style="display:flex;flex-direction:column;gap:22px"></div>
+      <p class="note">시제품입니다. 지원 내용은 2025~2026년 공고·보도 기준으로 정리했고, 금액과 모집 기간은 바뀔 수 있습니다. 신청 전 각 기관 공고를 꼭 확인하세요. 실제 서비스에서는 행정안전부 공공서비스(보조금24) 데이터를 연결해 시·군·구별 사업까지 자동으로 채웁니다.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+// 매일 확인 작업이 이 날짜를 갱신합니다
+const CHECKED="2026-10-23";
+const SGG={
+  "대구":["중구","동구","서구","남구","북구","수성구","달서구","달성군","군위군"],
+  "경북":["포항시","경주시","김천시","안동시","구미시","영주시","영천시","상주시","문경시","경산시","의성군","청송군","영양군","영덕군","청도군","고령군","성주군","칠곡군","예천군","봉화군","울진군","울릉군"],
+  "그 외 지역":["-"]
+};
+const $=id=>document.getElementById(id);
+function fillSgg(keep){const r=$("region").value;$("sgg").innerHTML=SGG[r].map(s=>`<option${s===keep?" selected":""}>${s}</option>`).join("")}
+
+// 조건 판정: true(충족) / "?"(확인 필요) / false(해당 없음)
+const inc=(p,max)=>p.inc===0?"?":p.inc<=max;
+const married=p=>!p.single&&(p.marital==="결혼 예정"||p.marital==="신혼 (7년 이내)");
+const renter=p=>p.house.startsWith("무주택 · 월세")||p.house.startsWith("무주택 · 전세");
+
+const P=[
+ {name:"부모급여",reg:"전국",type:"현금",amount:"0세 월 100만원 · 1세 월 50만원",apply:"복지로 · 정부24 · 주민센터",
+  test:p=>[[p.kids>=1&&p.young<=1,"만 0~1세 자녀"],[true,"소득 상관없음"]]},
+ {name:"아동수당",reg:"전국",type:"현금",amount:"월 10만원부터 (비수도권 추가 지급)",apply:"복지로 · 주민센터",status:"2026년 지급 연령 단계적 확대 중",
+  test:p=>[[p.kids>=1&&p.young<=7,"만 8세 미만 자녀"],[true,"소득 상관없음"]]},
+ {name:"첫만남이용권",reg:"전국",type:"바우처",amount:"출생아 1명당 200만원, 둘째부터 300만원",apply:"복지로 · 주민센터 (출생신고 때)",
+  test:p=>[[p.preg||(p.kids>=1&&p.young===0),"출산 예정 또는 올해 출생"]]},
+ {name:"청년월세 지원",reg:"전국",type:"현금",amount:"월 최대 20만원 · 최대 24개월 (생애 1회)",apply:"복지로 · 주민센터",
+  test:p=>[[p.age>=19&&p.age<=34,"만 19~34세"],[p.house.startsWith("무주택 · 월세"),"부모와 따로 사는 무주택 월세"],[inc(p,60),"청년 가구 중위소득 60% 이하"],["?","부모 포함 원가구 중위소득 100% 이하, 재산 기준"]]},
+ {name:"생계급여",reg:"전국",type:"현금",amount:"선정기준(1인 월 820,556원)과 소득의 차액",apply:"복지로 · 주민센터",
+  test:p=>[[inc(p,32),"소득인정액 중위소득 32% 이하"],["?","재산·자동차 포함 소득인정액 계산"]]},
+ {name:"기초연금",reg:"전국",type:"현금",amount:"매월 지급 (소득인정액에 따라 차등)",apply:"주민센터 · 국민연금공단 · 복지로",
+  test:p=>[[p.age>=65,"만 65세 이상"],[p.inc===999?false:"?","소득 하위 70% (소득인정액 기준)"]]},
+ {name:"노인맞춤돌봄서비스",reg:"전국",type:"서비스",amount:"안부 확인, 가사·외출 동행, 퇴원 후 단기 돌봄",apply:"주민센터",
+  test:p=>[[p.age>=65,"만 65세 이상"],[p.inc===0||p.inc<=150?"?":false,"기초수급·차상위·기초연금 수급 중 돌봄 필요"]]},
+ {name:"아이돌봄서비스",reg:"전국",type:"서비스",amount:"돌보미 파견, 소득별로 정부 지원 비율 차등",apply:"아이돌봄 누리집 · 주민센터",
+  test:p=>[[p.kids>=1&&p.young<=12,"만 12세 이하 자녀"],[inc(p,250),"중위소득 250% 이하 (2026년 확대)"]]},
+ {name:"기저귀·조제분유 지원",reg:"전국",type:"바우처",amount:"영아 기저귀·조제분유 구입비",apply:"복지로 · 보건소",
+  test:p=>[[p.kids>=1&&p.young<=1,"24개월 미만 영아"],[inc(p,100),"중위소득 100% 이하 (2026년 확대)"]]},
+ {name:"농식품바우처",reg:"전국",type:"바우처",amount:"채소·과일·우유 등 구입 카드",apply:"주민센터",
+  test:p=>[[p.inc===0?"?":p.inc<=50,"생계·의료급여 수급 등 취약 가구"],["?","2026년부터 청년 가구까지 확대, 세부 대상 확인"]]},
+ {name:"국민내일배움카드",reg:"전국",type:"바우처",amount:"직업훈련비 지원 (일부 자부담)",apply:"고용24",
+  test:p=>[[p.age>=15&&p.age<=74,"만 15~74세"],[["재직","구직 중","자영업"].includes(p.job),"구직자·재직자·자영업자"]]},
+
+ {name:"청년 전·월세 보증금 대출이자 지원",reg:"대구",type:"대출·이자",amount:"대출 최대 1억원, 이자 연 최대 3.5% 지원 (본인 최저 1.5%)",apply:"대구安방 (대구시 주거지원 플랫폼)",status:"상·하반기 회차별 모집",
+  test:p=>[[p.reg==="대구","대구 거주 또는 전입 예정"],[p.age>=19&&p.age<=39,"만 19~39세"],[renter(p),"무주택 · 보증금 2억5천만원 이하"],["?","본인 연소득 6천만원 이하 (부부 8천만원)"]]},
+ {name:"다자녀 가정 수도요금 감면",reg:"대구",type:"감면·할인",amount:"상수도 요금 감면",apply:"대구시 상수도사업본부 · 구·군청",
+  test:p=>[[p.reg==="대구","세대주 대구 거주"],[p.kids>=3&&p.young<19,"3자녀 이상, 막내 만 19세 미만"]]},
+ {name:"어르신 K-패스 환급",reg:"대구",type:"감면·할인",amount:"대중교통비 30% 환급",apply:"K-패스 앱·카드사",
+  test:p=>[[p.reg==="대구","대구 거주"],[p.age>=65,"만 65세 이상"]]},
+ {name:"청년 로컬크리에이터 지원",reg:"대구",type:"현금",amount:"사업화 지원금 1,000만원 + 창업 교육·컨설팅",apply:"대구테크노파크",status:"2026년 모집 마감 · 다음 공고 대기",
+  test:p=>[[p.reg==="대구","대구 주소"],[p.age>=19&&p.age<=39,"청년"],[["자영업","구직 중"].includes(p.job)?true:"?","예비 또는 3년 미만 창업자"]]},
+
+ {name:"신혼부부 임차보증금 이자 지원",reg:"경북",type:"대출·이자",amount:"이자 최대 연 5.5% 지원 (소득별 1.5% + 임신·출산 추가 최대 4%)",apply:"경북 주거복지시스템",
+  test:p=>[[p.reg==="경북","경북 거주"],[married(p),"신혼부부"],[p.house.startsWith("무주택 · 전세"),"무주택 전세"],["?","부부 합산 연소득 1억원 이하"]]},
+ {name:"작지만 특별한 결혼식",reg:"경북",type:"현금",amount:"예식 부대비용 실비 최대 300만원",apply:"경북도 · 시·군 공고",
+  test:p=>[[p.reg==="경북","경북 거주"],[married(p),"(예비)신혼부부"]]},
+ {name:"20대 신혼부부 가전·가구 지원",reg:"경북",type:"현금",amount:"가전·가구 구매비 100만원",apply:"시·군청",
+  test:p=>[[p.reg==="경북","경북 거주"],[married(p),"신혼부부"],[p.age<30?true:"?","20대에 결혼"]]},
+ {name:"청년 신혼부부 월세 지원",reg:"경북",type:"현금",amount:"월 최대 30만원 · 최대 2년 (소득별)",apply:"시·군청",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.age>=19&&p.age<=39,"만 19~39세"],[married(p),"신혼부부"],[p.house.startsWith("무주택 · 월세"),"무주택 월세"]]},
+ {name:"35세 이상 산모 의료비",reg:"경북",type:"현금",amount:"임신 1회당 최대 50만원",apply:"보건소",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.preg,"임신 중"],[p.age>=35?true:"?","만 35세 이상 산모"]]},
+ {name:"다자녀 큰 집 마련 이자 지원",reg:"경북",type:"대출·이자",amount:"주택구입 대출이자 연 최대 480만원",apply:"경북 주거복지시스템",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.kids>=3,"3자녀 이상"],["?","주택 9억원·124㎡ 이하, 부부 연소득 1억3천만원 이하"]]},
+ {name:"다자녀 가정 이사비",reg:"경북",type:"현금",amount:"이사비·중개수수료 최대 40만원",apply:"정부24 혜택알리미",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.kids>=2,"2자녀 이상"],[p.young<=2,"2024년 1월 이후 출생 자녀 포함"],["?","이사 후 전입신고 완료"]]},
+ {name:"다자녀 가정 농수산물 쿠폰",reg:"경북",type:"바우처",amount:p=>p.kids>=4?"10만원 쿠폰":p.kids===3?"7만원 쿠폰":"5만원 쿠폰",apply:"경북 저출생극복 통합 접수 시스템",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.kids>=2,"2자녀 이상"]]},
+
+ {name:"전기차 구매보조금 (국비)",reg:"전국",type:"구매지원",amount:"차종·성능별 차등 지급 + 지자체 보조금 추가",apply:"구매 대리점 계약 후 무공해차 통합누리집",
+  test:p=>[[p.ev,"전기차 구매 예정"],["?","해당 지자체에 일정 기간 이상 주소 (보통 3개월)"],["?","출고·등록 순 선정, 예산 소진 시 마감"]]},
+ {name:"대구시 전기차 보조금 (지방비)",reg:"대구",type:"구매지원",amount:"국비에 더해 대구시 보조금 추가 (금액은 시 공고 확인)",apply:"구매 대리점 · 무공해차 통합누리집",status:"대구시 회차별 공고 확인",
+  test:p=>[[p.reg==="대구","대구 거주"],[p.ev,"전기차 구매 예정"]]},
+ {name:"경북 시·군 전기차 보조금 (지방비)",reg:"경북",type:"구매지원",amount:"시·군별 지방비 추가, 청년 생애 첫차·다자녀·차상위 추가 지원 (시·군별)",apply:"구매 대리점 · 무공해차 통합누리집",status:"상반기 대부분 시·군 조기 마감 · 하반기 물량 공고",
+  test:p=>[[p.reg==="경북","경북 시·군 거주"],[p.ev,"전기차 구매 예정"]]},
+ {name:"내연기관차 → 전기차 전환 지원금",reg:"경북",type:"구매지원",amount:"최대 130만원 추가",apply:"전기차 보조금 신청 때 함께",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.ev,"전기차 구매 예정"],[p.ice?true:"?","휘발유·경유차 처분 후 전환 (하이브리드 제외)"]]},
+
+ {name:"근로장려금",reg:"전국",type:"현금",org:"국세청",amount:p=>{const t=eitcType(p);return `최대 ${t.max}만원 (${t.label} 기준, 재산 1억7천만원 이상이면 절반)`},apply:"홈택스 · 손택스 · ARS 1544-9944",
+  test:p=>{const t=eitcType(p);return[[["재직","자영업"].includes(p.job)?true:(p.job==="구직 중"?"?":false),"작년에 근로·사업 소득 있음"],
+   [isNaN(p.ann)?"?":p.ann<t.lim,`${t.label} 가구 총소득 ${t.lim.toLocaleString()}만원 미만`],
+   [isNaN(p.asset)?"?":p.asset<24000,"가구 재산 2억4천만원 미만"]]}},
+ {name:"자녀장려금",reg:"전국",type:"현금",org:"국세청",amount:p=>`자녀 1명당 50~100만원 (최대 ${Math.max(1,p.kids)*100}만원)`,apply:"홈택스 · 손택스 · ARS 1544-9944",
+  test:p=>[[p.kids>=1&&p.young<18,"만 18세 미만 자녀"],[isNaN(p.ann)?"?":p.ann<7000,"부부 합산 총소득 7,000만원 미만"],[isNaN(p.asset)?"?":p.asset<24000,"가구 재산 2억4천만원 미만"]]},
+ {name:"버팀목 전세자금대출 (일반)",reg:"전국",type:"대출·이자",org:"주택도시기금",amount:"연 1%대 후반~3%대 · 지방 최대 약 8,000만원",apply:"기금e든든 · 수탁은행(우리·국민·신한·농협·하나·iM뱅크)",
+  test:p=>[[noHome(p),"무주택 세대주 (전·월세)"],[isNaN(p.ann)?"?":p.ann<=5000,"부부 합산 연소득 5,000만원 이하"],["?","순자산 기준(매년 고시) · 보증금 한도"]]},
+ {name:"청년전용 버팀목 전세자금대출",reg:"전국",type:"대출·이자",org:"주택도시기금",amount:"최대 약 2억원 · 청년 우대금리",apply:"기금e든든 · 수탁은행",
+  test:p=>[[p.age>=19&&p.age<=34,"만 19~34세"],[noHome(p),"무주택 세대주"],[isNaN(p.ann)?"?":p.ann<=5000,"연소득 5,000만원 이하"],["?","보증금 3억원 이하 · 순자산 기준"]]},
+ {name:"신혼부부전용 버팀목 전세자금대출",reg:"전국",type:"대출·이자",org:"주택도시기금",amount:"지방 최대 약 2억원 · 신혼 우대금리",apply:"기금e든든 · 수탁은행",
+  test:p=>[[married(p),"혼인 7년 이내 또는 3개월 안 결혼 예정"],[noHome(p),"무주택 세대주"],[isNaN(p.ann)?"?":p.ann<=7500,"부부 합산 연소득 7,500만원 이하"]]},
+ {name:"신생아 특례 버팀목 (전세)",reg:"전국",type:"대출·이자",org:"주택도시기금",amount:"연 1%대부터 · 보증금 80% 이내 최대 약 3억원",apply:"기금e든든 · 수탁은행",
+  test:p=>[[(p.kids>=1&&p.young<=1)?true:(p.preg?"?":false),"신청일 기준 2년 안에 출산"],[noHome(p),"무주택 세대주"],[isNaN(p.ann)?"?":p.ann<=20000,"부부 합산 연소득 2억원 이하"],[isNaN(p.asset)?"?":p.asset<=33700,"순자산 약 3억3,700만원 이하"],["?","보증금 지방 4억원 이하 · 85㎡ 이하"]]},
+ {name:"신생아 특례 디딤돌 (주택구입)",reg:"전국",type:"대출·이자",org:"주택도시기금",amount:"연 1.8~4.5% · 최대 4억원",apply:"기금e든든 · 수탁은행",
+  test:p=>[[(p.kids>=1&&p.young<=1)?true:(p.preg?"?":false),"신청일 기준 2년 안에 출산"],[p.house!=="자가","무주택 세대주 (1주택자는 대환만)"],[isNaN(p.ann)?"?":p.ann<=20000,"부부 합산 연소득 2억원 이하"],[isNaN(p.asset)?"?":p.asset<=51100,"순자산 5억1,100만원 이하"],["?","주택 9억원 이하 · 85㎡ 이하"]]},
+ {name:"내집마련 디딤돌대출 (주택구입)",reg:"전국",type:"대출·이자",org:"주택도시기금",amount:"연 2%대~3%대 · 생애최초·신혼 한도 우대",apply:"기금e든든 · 수탁은행",
+  test:p=>{const lim=married(p)?8500:(p.kids>=2?7000:6000);return[[p.house!=="자가","무주택 세대주"],[isNaN(p.ann)?"?":p.ann<=lim,`부부 합산 연소득 약 ${lim.toLocaleString()}만원 이하 (${married(p)?"신혼":p.kids>=2?"2자녀 이상":"일반"} 기준)`],["?","순자산·주택가격 기준은 기금e든든 고시 확인"]]}},
+ {name:"불법사금융예방대출 (구 소액생계비대출)",reg:"전국",type:"대출·이자",org:"서민금융진흥원",amount:"최초 50만원, 용도 증빙 시 100만원 · 연 15.9%에서 성실상환 시 인하",apply:"서민금융통합지원센터 · 콜센터 1397",
+  test:p=>[[p.age>=19,"만 19세 이상"],[p.credit==="low"?true:(p.credit===""?"?":false),"신용평점 하위 20% 이하"],[isNaN(p.ann)?"?":p.ann<=3500,"연소득 3,500만원 이하"]]},
+ {name:"햇살론 (서민 생활자금 보증)",reg:"전국",type:"대출·이자",org:"서민금융진흥원",amount:"생활자금 · 상품별 한도·금리 다름",apply:"서민금융진흥원 앱 · 콜센터 1397",
+  test:p=>[[p.age>=19,"만 19세 이상"],[isNaN(p.ann)?"?":(p.ann<=3500?true:(p.ann<=4500?(p.credit==="low"?true:"?"):false)),"연소득 3,500만원 이하, 또는 4,500만원 이하이면서 신용 하위 20%"],["?","상품별(햇살론15·특례 등) 세부 조건은 상담으로 확인"]]},
+ {name:"햇살론유스 (청년)",reg:"전국",type:"대출·이자",org:"서민금융진흥원",amount:"학업·취업준비·생활자금 · 저금리 보증",apply:"서민금융진흥원 앱 · 콜센터 1397",
+  test:p=>[[p.age>=19&&p.age<=34,"만 34세 이하 청년"],[p.job==="재직"?"?":(["학생","구직 중"].includes(p.job)),"대학생·미취업 청년·사회초년생(재직 1년 이하)"],[isNaN(p.ann)?"?":p.ann<=3500,"연소득 3,500만원 이하"]]},
+ {name:"재난적의료비 지원",reg:"전국",type:"현금",org:"국민건강보험공단",amount:p=>`본인부담 의료비의 ${p.inc&&p.inc<=50?"70~80%":"60%"} 지원 · 연 최대 5,000만원`,apply:"건강보험공단 지사 · 병원 의료사회복지팀",
+  test:p=>{const low=p.inc&&p.inc<=50;let m;if(isNaN(p.med))m="?";else if(low)m=p.med>120;else if(isNaN(p.ann))m="?";else m=p.med>p.ann*0.1;
+   return[[p.inc===0?"?":(p.inc<=100?true:(p.inc<=250?"?":false)),"중위소득 100% 이하 (200%까지 개별 심사)"],
+   [isNaN(p.asset)?"?":p.asset<=70000,"가구 재산 7억원 이하"],
+   [m,low?"올해 본인부담 의료비 120~160만원 초과":"올해 본인부담 의료비가 연소득의 10% 초과"]]}},
+ {name:"본인부담상한제 환급",reg:"전국",type:"현금",org:"국민건강보험공단",amount:"1년 본인부담금이 상한액(소득분위별 90~843만원)을 넘으면 초과분 환급",apply:"자동 안내 · 건강보험공단 1577-1000 · The건강보험 앱",
+  test:p=>[[isNaN(p.med)?"?":(p.med>=843?true:(p.med>=90?"?":false)),"올해 급여 본인부담금이 내 분위 상한액 초과 (최저 90만원)"],[true,"건강보험 가입자·피부양자"]]},
+
+ {name:"국민취업지원제도 1유형 (구직촉진수당)",reg:"전국",type:"현금",org:"고용노동부",amount:"월 60만원 × 6개월 (최대 360만원) + 부양가족 1인당 월 10만원 (최대 40만원)",apply:"고용24 · 고용센터 · 상담 1350",
+  test:p=>{const y=p.age>=18&&p.age<=34;return[[p.age>=15&&p.age<=69,"만 15~69세"],[p.job==="구직 중"?true:(p.job==="학생"?"?":false),"지금 일하지 않고 구직 중"],
+   [p.inc===0?"?":p.inc<=(y?120:60),y?"청년 특례: 중위소득 120% 이하":"중위소득 60% 이하"],[isNaN(p.asset)?"?":p.asset<=(y?50000:40000),y?"재산 5억원 이하":"재산 4억원 이하"]]}},
+ {name:"국민취업지원제도 2유형 (취업활동비용)",reg:"전국",type:"현금",org:"고용노동부",amount:"취업지원 프로그램 + 활동비 최대 35만원",apply:"고용24 · 고용센터 · 상담 1350",
+  test:p=>[[p.age>=15&&p.age<=69,"만 15~69세"],[p.job==="구직 중"?true:(["학생","자영업"].includes(p.job)?"?":false),"구직 중 (영세 자영업자 포함)"],[(p.age>=18&&p.age<=34)?true:(p.inc===0?"?":p.inc<=100),"청년은 소득 무관, 그 외 중위소득 100% 이하"]]},
+ {name:"청년미래적금",reg:"전국",type:"현금",org:"금융위원회 · 은행",amount:"월 최대 50만원 × 3년 · 정부기여금 납입액의 6% (우대형 12%) · 비과세",apply:"취급 은행 앱",
+  test:p=>[[p.age>=19&&p.age<=34,"만 19~34세 (병역기간 최대 6년 제외)"],[["재직","자영업"].includes(p.job)?true:"?","근로·사업 소득 있음"],[p.inc===0?"?":p.inc<=200,"가구 중위소득 200% 이하 (일반형)"],["?","본인 총급여 6,000만원 이하면 기여금, 7,500만원 이하는 비과세만 · 청년도약계좌와 중복 불가"]]},
+ {name:"육아휴직 급여",reg:"전국",type:"현금",org:"고용노동부",amount:"통상임금 100% · 월 상한 1~3개월 250만원, 4~6개월 200만원, 이후 160만원 · 부모 모두 쓰면 6+6으로 최대 월 450만원",apply:"고용24 (휴직 시작 1개월 후부터)",
+  test:p=>[[p.job==="재직",["재직"].includes(p.job)?"고용보험 가입 근로자":"고용보험 가입 근로자"],[p.kids>=1&&p.young<=8?true:(p.preg?"?":false),"만 8세 이하(초2 이하) 자녀"],["?","휴직 전 고용보험 가입기간 180일 이상"]]},
+ {name:"주거급여",reg:"전국",type:"현금",org:"국토교통부 · 주민센터",amount:"월세 가구는 지역·가구원별 기준임대료 안에서 실제 월세, 자가 가구는 집수리 지원",apply:"복지로 · 주민센터",
+  test:p=>[[p.inc===0?"?":p.inc<=48,"소득인정액 중위소득 48% 이하"]]},
+ {name:"의료급여",reg:"전국",type:"감면·할인",org:"보건복지부 · 주민센터",amount:"병원·약국 본인부담 대폭 경감 (1종 대부분 무료 수준)",apply:"복지로 · 주민센터",
+  test:p=>[[p.inc===0?"?":p.inc<=40,"소득인정액 중위소득 40% 이하"],["?","부양의무자 기준 확인"]]},
+ {name:"교육급여",reg:"전국",type:"현금",org:"교육부 · 주민센터",amount:"초·중·고 학생 교육활동지원비 연 1회 지급",apply:"복지로 · 주민센터 (보통 3월 집중 신청)",
+  test:p=>[[p.kids>=1&&p.young<=18?(p.young>=6?true:"?"):false,"초·중·고 학생 자녀"],[p.inc===0?"?":p.inc<=50,"소득인정액 중위소득 50% 이하"]]},
+ {name:"한부모가족 아동양육비",reg:"전국",type:"현금",org:"여성가족부 · 주민센터",amount:p=>`자녀 1명당 월 23만원${p.age>=25&&p.age<=34?" + 청년 한부모 추가 10만원":""} (예상 월 ${(p.kids||1)*23+(p.age>=25&&p.age<=34?10*(p.kids||1):0)}만원) · 학용품비 연 10만원`,apply:"복지로 · 주민센터 (상시)",
+  test:p=>[[p.single,"한부모 가정"],[p.kids>=1&&p.young<18,"만 18세 미만 자녀"],[p.inc===0?"?":p.inc<=65,"소득인정액 중위소득 65% 이하"]]},
+ {name:"임신·출산 진료비 바우처",reg:"전국",type:"바우처",org:"국민건강보험공단",amount:"국민행복카드 100만원 (다태아 140만원부터)",apply:"카드사 · 건강보험공단 · 산부인과",
+  test:p=>[[p.preg?true:(p.kids>=1&&p.young===0?"?":false),"임신 확인 후 (출산 후 2년까지 사용)"],[true,"소득 상관없음"]]},
+ {name:"산모·신생아 건강관리 (산후도우미)",reg:"전국",type:"바우처",org:"보건소",amount:"건강관리사 방문 서비스 · 소득별 정부 지원",apply:"복지로 · 보건소 (출산 예정 40일 전 ~ 출산 후 60일)",
+  test:p=>[[p.preg||(p.kids>=1&&p.young===0),"출산 예정 또는 출산 60일 이내"],[p.inc===0?"?":(p.inc<=150?true:"?"),"중위소득 150% 이하 (지자체 예외 지원 있음)"]]},
+ {name:"출산가구 전기요금 할인",reg:"전국",type:"감면·할인",org:"한국전력",amount:"전기요금 30% · 월 최대 1만6천원 · 최대 3년",apply:"한전ON · 고객센터 123 · 관리사무소",
+  test:p=>[[p.kids>=1&&p.young<3,"36개월 미만 자녀가 있는 가구"],[true,"소득 상관없음"]]},
+ {name:"다자녀·대가족 전기요금 할인",reg:"전국",type:"감면·할인",org:"한국전력",amount:"전기요금 30% · 월 최대 1만6천원 (출산가구 할인과 중복 안 됨)",apply:"한전ON · 고객센터 123",
+  test:p=>[[p.kids>=3||(p.kids+2)>=5,"자녀 3명 이상 또는 세대원 5명 이상"]]},
+ {name:"문화누리카드",reg:"전국",type:"바우처",org:"문화체육관광부",amount:"1인당 연 15만원 (공연·여행·체육)",apply:"문화누리 누리집 · 주민센터",
+  test:p=>[[p.inc===0?"?":p.inc<=50,"기초생활수급자 또는 차상위계층"],[p.age>=6,"만 6세 이상 (가구원 각자 발급)"]]},
+ {name:"에너지바우처",reg:"전국",type:"바우처",org:"산업통상자원부",amount:"여름 냉방비 + 겨울 난방비 · 가구원 수별 차등",apply:"주민센터 · 에너지바우처 누리집",
+  test:p=>[[p.inc===0?"?":p.inc<=50,"생계·의료·주거·교육급여 수급 가구"],[(p.age>=65||(p.kids>=1&&p.young<7)||p.preg||p.single)?true:"?","노인·영유아·임산부·한부모·장애인 등 포함 가구"]]},
+ {name:"K-패스 (모두의 카드)",reg:"전국",type:"감면·할인",org:"국토교통부",amount:p=>{if(p.inc&&p.inc<=50)return"교통비 53.3% 환급 (저소得층)".replace("得","득");if(p.kids>=3)return"교통비 50% 환급 (3자녀 이상)";if(p.kids===2)return"교통비 30% 환급 (2자녀)";if(p.age>=19&&p.age<=34)return"교통비 30% 환급 (청년)";return"교통비 20% 환급 · 정액형은 기준금액 초과분 전액 환급"},apply:"K-패스 앱 · 카드사",
+  test:p=>[[true,"월 15회 이상 대중교통 이용"],[p.age>=19?true:"?","만 19세 이상"]]},
+ {name:"국가장학금",reg:"전국",type:"현금",org:"한국장학재단",amount:"학자금 지원구간별 등록금 지원 (저소득일수록 많음)",apply:"한국장학재단 누리집 · 앱",
+  test:p=>[[p.job==="학생"?true:"?","대학(원)생 본인 또는 대학생 자녀"],[p.inc===0?"?":(p.inc<=200?true:"?"),"학자금 지원구간 (건강보험료·재산 기준)"]]},
+ {name:"노인일자리 및 사회활동 지원",reg:"전국",type:"현금",org:"보건복지부 · 시니어클럽",amount:"공익활동·사회서비스형 등 활동비 · 유형별 차등",apply:"노인일자리 여기 · 주민센터 · 노인복지관",
+  test:p=>[[p.age>=60,"만 60세 이상 (공익활동형은 65세 이상 기초연금 수급)"]]},
+ {name:"경북 청년애꿈수당",reg:"경북",type:"현금",org:"경상북도경제진흥원",amount:"면접수당 1회 7만원 (최대 5회) · 취업성공 50만원 · 근속 분기 30만원 × 4회 (2024년 기준)",apply:"청년e끌림 · 청년애꿈수당 누리집",
+  test:p=>[[p.reg==="경북","경북 주소"],[p.age>=19&&p.age<=39,"만 19~39세"],[["구직 중","재직"].includes(p.job)?true:"?","경북 중소·중견기업 면접·취업·근속"]]},
+ {name:"대구 구·군 출산지원금",reg:"대구",type:"현금",org:"구청·군청",amount:"구·군별 금액 다름 (달성군·군위군 등은 별도 지원)",apply:"출생신고 때 주민센터",
+  test:p=>[[p.reg==="대구","대구 거주"],[p.preg||(p.kids>=1&&p.young===0),"출산 예정 또는 올해 출생"]]},
+ {name:"경북 시·군 출산장려금",reg:"경북",type:"현금",org:"시청·군청",amount:"시·군별 금액·지급 방식 다름 (군 지역은 수백만원대도 있음)",apply:"출생신고 때 주민센터",
+  test:p=>[[p.reg==="경북","경북 거주"],[p.preg||(p.kids>=1&&p.young===0),"출산 예정 또는 올해 출생"],["?","부모 거주기간 요건 (시·군별)"]]},
+
+ {name:"장애인연금",reg:"전국",type:"현금",org:"보건복지부 · 주민센터",amount:p=>`기초급여 월 최대 34만9,700원 + 부가급여 월 3만~9만원${p.age>=65?" (65세부터 기초급여는 기초연금으로 전환)":""}`,apply:"복지로 · 주민센터",
+  test:p=>{const lim=married(p)||p.marital==="기혼 (7년 넘음)"?224:140;return[[p.dis==="heavy",p.dis==="heavy"?"중증장애인":"중증장애인 (장애 칸에서 선택)"],[p.age>=18,"만 18세 이상"],[isNaN(p.ann)?"?":(p.ann/12<=lim?true:"?"),`본인·배우자 소득인정액 월 ${lim}만원 이하 (${lim===224?"부부":"단독"})`]]}},
+ {name:"장애수당",reg:"전국",type:"현금",org:"보건복지부 · 주민센터",amount:"월 6만원 (재가 기준)",apply:"복지로 · 주민센터",
+  test:p=>[[p.dis==="light",p.dis==="light"?"경증장애인":"경증장애인 (장애 칸에서 선택)"],[p.age>=18,"만 18세 이상"],[p.inc===0?"?":p.inc<=50,"기초생활수급자 또는 차상위계층"]]},
+ {name:"실업급여 (구직급여)",reg:"전국",type:"현금",org:"고용노동부",amount:"퇴직 전 평균임금의 60% · 하루 66,048~68,100원 (월 약 198~204만원) · 120~270일",apply:"고용24 온라인 교육 → 고용센터 수급자격 신청",
+  test:p=>[[p.quit,"최근 퇴사 (퇴사 다음날부터 12개월 안에 다 받아야 함)"],[p.quit?(p.invol?true:"?"):false,"비자발적 퇴사 (자진퇴사는 임금체불·괴롭힘·통근 곤란 등 정당한 사유만)"],["?","퇴사 전 18개월 중 고용보험 가입 180일 이상"],[p.job==="구직 중"?true:"?","일할 의사와 능력이 있고 구직 활동"]]},
+ {name:"저소득층 통신비 감면",reg:"전국",type:"감면·할인",org:"과학기술정보통신부 · 통신사",amount:p=>{if(p.inc&&p.inc<=40)return"월 최대 4만1천원 (기본료 2만6천원 면제 + 통화료 50%)";if(p.inc&&p.inc<=50)return"월 최대 3만원 (기본료 1만1천원 면제 + 35%)";if(p.dis)return"요금 35% 감면 (장애인)";return"요금 50% · 월 최대 2만2천원 (65세 이상 기초연금 수급자)"},apply:"통신사 대리점·고객센터 · 복지로",
+  test:p=>[[p.dis?true:(p.inc===0?"?":(p.inc<=50?true:(p.age>=65?"?":false))),"수급자·차상위, 장애인, 또는 65세 이상 기초연금 수급자"],[true,"본인 명의 휴대폰 (가족도 각자 신청)"]]},
+ {name:"다자녀 자동차 취득세 감면",reg:"전국",type:"감면·할인",org:"시·군·구청 (세무과)",amount:p=>p.kids>=3?"취득세 면제 (3자녀 이상, 한도 있음)":"취득세 50% 감면 (2자녀)",apply:"차량 등록 때 시·군·구청 · 위택스",
+  test:p=>[[p.kids>=2,"자녀 2명 이상"],[p.kids>=2&&p.young<18?"?":false,"자녀가 모두 만 18세 미만 (막내만 확인됨)"],[p.car||p.ev,"자동차 구매 예정"],["?","차종·인승·감면 한도와 1가구 1대 요건 확인"]]},
+ {name:"국민연금 출산크레딧",reg:"전국",type:"서비스",org:"국민연금공단",amount:p=>`국민연금 가입기간 추가 인정 · 자녀 1·2명째 각 12개월, 셋째부터 각 18개월 → 나중에 연금액 증가`,apply:"노령연금 받을 때 국민연금공단에 신청",
+  test:p=>[[p.kids>=1&&p.young<=0?true:(p.preg?"?":(p.kids>=1?"?":false)),"2026년 1월 이후 출생 자녀 (이전 출생은 옛 기준: 둘째부터)"],[true,"부모 중 한 명 또는 나눠서 인정"]]},
+];
+function eitcType(p){
+  if(p.earn==="맞벌이")return{label:"맞벌이",lim:4400,max:330};
+  if(p.marital!=="미혼"||p.kids>0)return{label:"홑벌이",lim:3200,max:285};
+  return{label:"단독",lim:2200,max:165};
+}
+function noHome(p){return p.house==="자가"?false:(p.house.startsWith("무주택 · 부모")?"?":true)}
+// 신청 기간: always=상시, start/end=접수 기간(YYYY-MM-DD), text=화면 표시
+const PER={
+ "부모급여":{always:1,text:"상시 · 출생 후 60일 안에 신청하면 출생월부터 소급"},
+ "아동수당":{always:1,text:"상시 · 출생 후 60일 안에 신청하면 출생월부터 소급"},
+ "첫만남이용권":{always:1,text:"상시 · 출생신고 때 함께 신청"},
+ "청년월세 지원":{start:"2026-03-30",end:"2026-05-29",text:"2026년 접수 3월 30일 ~ 5월 29일 (연 1회 모집)"},
+ "생계급여":{always:1,text:"상시"},
+ "기초연금":{always:1,text:"상시 · 만 65세 생일 한 달 전부터 신청 가능"},
+ "노인맞춤돌봄서비스":{always:1,text:"상시"},
+ "아이돌봄서비스":{always:1,text:"상시"},
+ "기저귀·조제분유 지원":{always:1,text:"상시"},
+ "농식품바우처":{text:"연초 시·군·구별 신청 기간 공고"},
+ "국민내일배움카드":{always:1,text:"상시"},
+ "청년 전·월세 보증금 대출이자 지원":{start:"2026-01-22",end:"2026-02-06",text:"2026년 상반기 1월 22일 ~ 2월 6일 · 하반기는 7월경 모집 (2025년 기준)"},
+ "다자녀 가정 수도요금 감면":{always:1,text:"상시 · 2026년 9월 고지분부터 적용"},
+ "어르신 K-패스 환급":{always:1,text:"상시"},
+ "청년 로컬크리에이터 지원":{start:"2026-03-16",end:"2026-04-06",text:"2026년 접수 3월 16일 ~ 4월 6일"},
+ "신혼부부 임차보증금 이자 지원":{text:"경북 주거복지시스템 공고 확인"},
+ "작지만 특별한 결혼식":{text:"예산 소진 시까지 · 시·군 공고 확인"},
+ "20대 신혼부부 가전·가구 지원":{text:"시·군 공고 확인"},
+ "청년 신혼부부 월세 지원":{text:"시·군 공고 확인"},
+ "35세 이상 산모 의료비":{text:"관할 보건소 문의"},
+ "다자녀 큰 집 마련 이자 지원":{start:"2026-03-16",text:"2026년 3월 16일부터 온라인 접수 (예산 소진 시 마감)"},
+ "다자녀 가정 이사비":{start:"2026-03-03",text:"2026년 3월 3일부터 접수 (예산 소진 시 마감)"},
+ "다자녀 가정 농수산물 쿠폰":{start:"2026-03-03",text:"2026년 3월 3일부터 접수 (예산 소진 시 마감)"},
+ "전기차 구매보조금 (국비)":{text:"연중 접수 · 지자체 예산 소진 시 마감"},
+ "대구시 전기차 보조금 (지방비)":{text:"대구시 회차별 공고 확인"},
+ "경북 시·군 전기차 보조금 (지방비)":{text:"하반기 물량 공고 확인 · 상반기 대부분 조기 마감"},
+ "내연기관차 → 전기차 전환 지원금":{text:"전기차 보조금과 같은 기간"},
+ "근로장려금":{start:"2026-05-01",end:"2026-11-30",text:"정기 5월 1~31일 (마감) · 11월 30일까지 기한 후 신청 가능 (5% 감액) · 근로소득만 있으면 반기 신청도 가능"},
+ "자녀장려금":{start:"2026-05-01",end:"2026-11-30",text:"정기 5월 1~31일 (마감) · 11월 30일까지 기한 후 신청 가능 (5% 감액)"},
+ "버팀목 전세자금대출 (일반)":{always:1,text:"상시 · 전세계약 후 잔금일 전 신청"},
+ "청년전용 버팀목 전세자금대출":{always:1,text:"상시 · 전세계약 후 잔금일 전 신청"},
+ "신혼부부전용 버팀목 전세자금대출":{always:1,text:"상시 · 전세계약 후 잔금일 전 신청"},
+ "신생아 특례 버팀목 (전세)":{always:1,text:"상시 · 출산 후 2년 안"},
+ "신생아 특례 디딤돌 (주택구입)":{always:1,text:"상시 · 출산 후 2년 안, 소유권 이전 3개월 안"},
+ "내집마련 디딤돌대출 (주택구입)":{always:1,text:"상시 · 소유권 이전 3개월 안"},
+ "불법사금융예방대출 (구 소액생계비대출)":{always:1,text:"상시 · 센터 방문 예약 후 당일 지급"},
+ "햇살론 (서민 생활자금 보증)":{always:1,text:"상시"},
+ "햇살론유스 (청년)":{always:1,text:"상시"},
+ "재난적의료비 지원":{always:1,text:"상시 · 퇴원일(최종 진료일) 다음날부터 180일 안"},
+ "국민취업지원제도 1유형 (구직촉진수당)":{always:1,text:"상시 · 예산 범위 안에서 선정"},
+ "국민취업지원제도 2유형 (취업활동비용)":{always:1,text:"상시"},
+ "청년미래적금":{start:"2026-12-01",text:"1차 6월 22일 ~ 7월 3일 (마감) · 12월 신규 모집 예정, 정확한 날짜는 공고 확인"},
+ "육아휴직 급여":{always:1,text:"상시 · 휴직 시작 1개월 뒤부터 매월, 종료 후 12개월 안에 신청"},
+ "주거급여":{always:1,text:"상시"},
+ "의료급여":{always:1,text:"상시"},
+ "교육급여":{always:1,text:"상시 · 매년 3월 집중 신청"},
+ "한부모가족 아동양육비":{always:1,text:"상시 · 신청한 달부터 지급"},
+ "임신·출산 진료비 바우처":{always:1,text:"상시 · 임신 확인 후 신청"},
+ "산모·신생아 건강관리 (산후도우미)":{always:1,text:"출산 예정일 40일 전 ~ 출산 후 60일"},
+ "출산가구 전기요금 할인":{always:1,text:"상시 · 이사하면 다시 신청"},
+ "다자녀·대가족 전기요금 할인":{always:1,text:"상시"},
+ "문화누리카드":{start:"2026-02-02",end:"2026-11-30",text:"2026년 발급 2월 2일 ~ 11월 30일, 사용 12월 31일까지"},
+ "에너지바우처":{text:"보통 5월 ~ 12월 신청 · 올해 공고 확인"},
+ "K-패스 (모두의 카드)":{always:1,text:"상시"},
+ "국가장학금":{text:"매 학기 1·2차 신청 · 다음 학기 1차는 보통 연말"},
+ "노인일자리 및 사회활동 지원":{text:"보통 12월 ~ 1월 다음 해 참여자 모집"},
+ "경북 청년애꿈수당":{text:"2026년 공고 확인 (매년 예산 소진 시까지 접수)"},
+ "대구 구·군 출산지원금":{always:1,text:"상시 · 출생신고 때 함께"},
+ "경북 시·군 출산장려금":{always:1,text:"상시 · 출생신고 때 함께"},
+ "장애인연금":{always:1,text:"상시 · 신청한 달부터 지급, 매월 20일"},
+ "장애수당":{always:1,text:"상시 · 매월 20일 지급"},
+ "실업급여 (구직급여)":{always:1,text:"퇴사 후 바로 · 퇴사 다음날부터 12개월이 지나면 남은 일수는 사라짐"},
+ "저소득층 통신비 감면":{always:1,text:"상시 · 자동 적용 안 됨, 직접 신청해야 함"},
+ "다자녀 자동차 취득세 감면":{always:1,text:"차량 취득 때 · 3자녀 면제는 2027년 말까지"},
+ "국민연금 출산크레딧":{always:1,text:"지금은 신청할 것 없음 · 연금 받을 때 신청"},
+ "본인부담상한제 환급":{always:1,text:"매년 8월 말 공단이 안내 · 받을 권리는 3년간 유지"},
+};
+function perState(per){
+  if(!per)return{k:"chk",l:"공고 확인"};
+  if(per.always)return{k:"open",l:"상시 신청"};
+  const t=new Date();t.setHours(0,0,0,0);
+  const s=per.start?new Date(per.start+"T00:00:00"):null, e=per.end?new Date(per.end+"T00:00:00"):null;
+  if(e&&t>e)return{k:"closed",l:"올해 마감 · 다음 공고 대기"};
+  if(s&&t<s)return{k:"soon",l:"접수 예정"};
+  if(s)return{k:"open",l:"접수 중"};
+  return{k:"chk",l:"공고 확인"};
+}
+const TYPES=["현금","바우처","대출·이자","감면·할인","구매지원","서비스"];
+let filter="전체";
+
+// 재산까지 보는 지원: 카드에 경고 표시
+const ASSET={
+ "생계급여":"소득인정액으로 판단합니다. 집·전세보증금·예금·자동차 같은 재산을 소득으로 환산해 더하므로, 연봉만으로 계산한 %보다 높게 나올 수 있습니다.",
+ "기초연금":"소득인정액(소득 + 재산 환산액)으로 판단합니다. 연금·예금·집·자동차까지 합산됩니다.",
+ "노인맞춤돌봄서비스":"기초수급·차상위·기초연금 수급 여부로 판단하며, 모두 재산을 포함한 소득인정액 기준입니다.",
+ "농식품바우처":"생계·의료급여 수급 가구 대상이라 재산을 포함한 소득인정액 기준입니다.",
+ "청년월세 지원":"청년 가구 재산 1억2,200만원 이하, 부모 포함 원가구 재산 4억7,000만원 이하도 함께 봅니다.",
+ "근로장려금":"가구 재산(집·전세보증금·예금·자동차 등) 2억4천만원 미만이어야 하고, 1억7천만원 이상이면 절반만 지급됩니다.",
+ "자녀장려금":"가구 재산 2억4천만원 미만이어야 하고, 1억7천만원 이상이면 절반만 지급됩니다.",
+ "버팀목 전세자금대출 (일반)":"부부 합산 순자산(재산 − 부채) 기준을 넘으면 대출이 안 됩니다.",
+ "청년전용 버팀목 전세자금대출":"순자산(재산 − 부채) 기준을 넘으면 대출이 안 됩니다.",
+ "신혼부부전용 버팀목 전세자금대출":"부부 합산 순자산(재산 − 부채) 기준을 넘으면 대출이 안 됩니다.",
+ "신생아 특례 버팀목 (전세)":"부부 합산 순자산 약 3억3,700만원 이하여야 합니다.",
+ "신생아 특례 디딤돌 (주택구입)":"부부 합산 순자산 5억1,100만원 이하여야 합니다.",
+ "내집마련 디딤돌대출 (주택구입)":"부부 합산 순자산 기준(매년 고시)을 넘으면 대출이 안 됩니다.",
+ "국민취업지원제도 1유형 (구직촉진수당)":"재산 4억원 이하(청년 5억원 이하)여야 합니다. 집·전세보증금·예금·자동차가 모두 포함됩니다.",
+ "주거급여":"소득인정액(소득 + 재산 환산액)으로 판단합니다. 연봉만으로 계산한 %보다 높게 나올 수 있습니다.",
+ "의료급여":"소득인정액(소득 + 재산 환산액)으로 판단하고, 부양의무자 재산도 볼 수 있습니다.",
+ "교육급여":"소득인정액(소득 + 재산 환산액)으로 판단합니다.",
+ "한부모가족 아동양육비":"소득인정액(소득 + 재산 환산액)으로 판단합니다. 급여가 낮아도 재산이 많으면 빠질 수 있습니다.",
+ "문화누리카드":"수급자·차상위 여부로 판단하며, 모두 재산을 포함한 소득인정액 기준입니다.",
+ "에너지바우처":"급여 수급 가구 대상이라 재산을 포함한 소득인정액 기준입니다.",
+ "국가장학금":"학자금 지원구간은 건강보험료와 재산·자동차·금융자산을 합쳐 계산합니다.",
+ "장애인연금":"소득인정액(소득 + 재산 환산액)으로 판단합니다. 연봉만으로는 정확히 알 수 없습니다.",
+ "장애수당":"수급자·차상위 여부로 판단하며, 재산을 포함한 소득인정액 기준입니다.",
+ "재난적의료비 지원":"가구 재산 합계 7억원 이하여야 하고, 소득도 재산을 반영해 심사합니다.",
+};
+// 2026년 기준 중위소득 (월, 원) · 보건복지부 고시
+const MEDIAN=[0,2564238,4199292,5359036,6494738,7556719,8555952];
+function median(n){return n<=6?MEDIAN[n]:MEDIAN[6]+(MEDIAN[6]-MEDIAN[5])*(n-6)}
+function autoHH(){const m=$("marital").value;return 1+((m==="미혼"||$("single").checked)?0:1)+(+$("kids").value||0)}
+function read(){
+  const reg=$("region").value;
+  return {reg:reg==="그 외 지역"?"기타":reg,sgg:$("sgg").value,age:+$("age").value||0,job:$("job").value,
+    marital:$("marital").value,preg:$("preg").checked,kids:+$("kids").value||0,young:+$("young").value||0,
+    house:$("house").value,inc:incPct().pct,ev:$("ev").checked,ice:$("ice").checked,
+    single:$("single").checked,hh:incPct().hh,quit:$("quit").checked,invol:$("invol").checked,dis:$("dis").value,car:$("car").checked,earn:$("earn").value,ann:num("ann"),asset:num("asset"),credit:$("credit").value,med:num("med")};
+}
+function incPct(){
+  const ann=num("ann"), hhv=num("hh"), hh=isNaN(hhv)||hhv<1?autoHH():Math.round(hhv);
+  $("hh").placeholder=`자동: ${autoHH()}명`;
+  if(isNaN(ann))return{pct:0,hh};
+  const mon=ann*10000/12, pct=Math.round(mon/median(hh)*100);
+  return{pct:Math.max(pct,1),hh,mon};
+}
+function showInc(){
+  const r=incPct();
+  if(!r.mon&&r.pct===0){$("incbox").innerHTML=`<span class="hint">연소득을 넣으면 기준 중위소득 몇 %인지 계산합니다.</span>`;return}
+  const band=r.pct<=32?"생계급여 선":r.pct<=40?"의료급여 선":r.pct<=48?"주거급여 선":r.pct<=50?"교육급여 선":r.pct<=60?"60% 이하":r.pct<=100?"100% 이하":r.pct<=150?"150% 이하":r.pct<=200?"200% 이하":"200% 초과";
+  const w=Math.min(r.pct,250)/250*100;
+  $("incbox").innerHTML=`<div class="inc-top"><span>${r.hh}인 가구 · 월 ${Math.round(r.mon/10000).toLocaleString()}만원</span><b>중위소득 ${r.pct}%</b></div>
+   <div class="bar"><i style="width:${w}%"></i><s style="left:${100/250*100}%"></s></div>
+   <div class="hint">${band} · ${r.hh}인 가구 중위소득 100% = 월 ${Math.round(median(r.hh)/10000).toLocaleString()}만원. 연봉만으로 계산한 추정치입니다. <b>"재산도 봅니다"</b> 표시가 있는 지원은 재산까지 합쳐 심사하므로 실제 %가 더 높게 나올 수 있습니다.</div>`;
+}
+function num(id){const v=$(id).value.trim();return v===""?NaN:+v}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+// ── 보조금24 API 데이터 (data/benefits.json · GitHub가 매일 자동 갱신) ──
+let APIITEMS=[], APIUPDATED="";
+const norm=s=>String(s).replace(/[\s()·\-–_,.\[\]]/g,"");
+const MANUAL=P.map(x=>norm(x.name)).filter(n=>n.length>=4);
+function isDup(name){const n=norm(name);return MANUAL.some(m=>n.includes(m)||m.includes(n))}
+function kindOf(k){k=k||"";if(/감면/.test(k))return"감면·할인";if(/융자|대출/.test(k))return"대출·이자";if(/이용권|바우처/.test(k))return"바우처";if(/현금/.test(k))return"현금";return"서비스"}
+const INC_LAB={JA0201:"50% 이하",JA0202:"51~75%",JA0203:"76~100%",JA0204:"101~200%",JA0205:"200% 초과"};
+const incCode=p=>p.inc===0?null:p.inc<=50?"JA0201":p.inc<=75?"JA0202":p.inc<=100?"JA0203":p.inc<=200?"JA0204":"JA0205";
+function grp(list,on,fn,label){const ks=list.filter(k=>on.has(k));if(!ks.length)return null;const vs=ks.map(fn);
+  const v=vs.includes(true)?true:(vs.includes("?")?"?":false);return[v,label(ks)]}
+const NAMES={JA0301:"예비부모·난임",JA0302:"임산부",JA0303:"출산·입양",JA0313:"농업인",JA0314:"어업인",JA0315:"축산업인",JA0316:"임업인",JA0317:"초등학생",JA0318:"중학생",JA0319:"고등학생",JA0320:"대학생",JA0326:"직장인",JA0327:"구직자·실업자",JA0328:"장애인",JA0329:"국가보훈대상자",JA0330:"질병·질환자",JA0401:"다문화가족",JA0402:"북한이탈주민",JA0403:"한부모·조손가정",JA0404:"1인 가구",JA0411:"다자녀 가구",JA0412:"무주택 세대",JA0413:"신규 전입",JA0414:"확대가족"};
+const lab=ks=>ks.map(k=>NAMES[k]).join(" · ")+" 대상";
+function apiTest(it){const c=it.cond||{},on=new Set(c.on||[]);return p=>{const r=[];
+  if(it.sgg){const ok=p.sgg&&(it.sgg.includes(p.sgg)||p.sgg.includes(it.sgg));r.push([!!ok,`${it.sgg} 주민`])}
+  if(c.JA0110!=null||c.JA0111!=null){const a0=c.JA0110??0,a1=c.JA0111??200;r.push([p.age>=a0&&p.age<=a1,a1>=120?`만 ${a0}세 이상`:`만 ${a0}~${a1}세`])}
+  const inc=Object.keys(INC_LAB).filter(k=>on.has(k));
+  if(inc.length&&inc.length<5){const my=incCode(p);r.push([my?inc.includes(my):"?","중위소득 "+inc.map(k=>INC_LAB[k]).join(", ")])}
+  const g1=grp(["JA0301","JA0302","JA0303"],on,k=>k==="JA0302"?p.preg:k==="JA0303"?(p.kids>=1&&p.young===0):(p.preg?true:"?"),lab);if(g1)r.push(g1);
+  if(!on.has("JA0322")){const g2=grp(["JA0313","JA0314","JA0315","JA0316","JA0317","JA0318","JA0319","JA0320","JA0326","JA0327"],on,
+    k=>k==="JA0326"?p.job==="재직":k==="JA0327"?(p.job==="구직 중"||p.quit):["JA0317","JA0318","JA0319","JA0320"].includes(k)?(p.job==="학생"||(p.kids>=1&&p.young>=6&&p.young<=18)?"?":false):"?",lab);if(g2)r.push(g2)}
+  if(!on.has("JA0410")){const g3=grp(["JA0401","JA0402","JA0403","JA0404","JA0411","JA0412","JA0413","JA0414"],on,
+    k=>k==="JA0403"?p.single:k==="JA0404"?p.hh===1:k==="JA0411"?p.kids>=2:k==="JA0412"?noHome(p):"?",lab);if(g3)r.push(g3)}
+  const g4=grp(["JA0328","JA0329","JA0330"],on,k=>k==="JA0328"?!!p.dis:"?",lab);if(g4)r.push(g4);
+  return r.length?r:[["?","공고의 지원 대상·선정기준 확인"]];}}
+function apiPer(t){t=t||"";if(/상시/.test(t))return{always:1,text:t};
+  const d=[...t.matchAll(/(20\d\d)\s*[.\-년]\s*(\d{1,2})\s*[.\-월]\s*(\d{1,2})/g)].map(m=>`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`);
+  if(d.length>=2)return{start:d[0],end:d[1],text:t};if(d.length===1&&/까지/.test(t))return{end:d[0],text:t};return{text:t||"공고 확인"}}
+function buildApi(j){APIUPDATED=j.updated||"";APIITEMS=(j.items||[]).filter(it=>!isDup(it.name)).map(it=>({
+  name:it.name,reg:it.reg,type:kindOf(it.kind),org:it.org,amount:it.content||it.summary,apply:[it.how,it.recv].filter(Boolean).join(" · ")||"공고 확인",
+  test:apiTest(it),api:it,views:it.views||0,per:apiPer(it.deadline),
+  asset:/재산|소득인정액/.test((it.criteria||"")+(it.target||""))?"공고 선정기준에 재산(소득인정액) 기준이 있습니다. 연봉만으로 판단하면 안 됩니다.":""}));
+  $("apiinfo").textContent=` · 보조금24 데이터 ${APIITEMS.length.toLocaleString()}건 (${APIUPDATED} 갱신)`;render()}
+let LIMIT={local:30,nat:30};
+function render(){
+  showInc();
+  const p=read();
+  const hits=[];
+  const q=($("q").value||"").trim();
+  for(const x of P.concat(APIITEMS)){
+    if(x.reg!=="전국"&&p.reg!==x.reg)continue;
+    if(q&&!(x.name.includes(q)||(x.api&&((x.api.summary||"").includes(q)||(x.api.field||"").includes(q)))))continue;
+    const c=x.test(p);
+    if(c.some(([v])=>v===false))continue;
+    hits.push({x,c,likely:c.every(([v])=>v===true)});
+  }
+  if($("openOnly").checked){for(let i=hits.length-1;i>=0;i--){if(perState(hits[i].x.per||PER[hits[i].x.name]).k!=="open")hits.splice(i,1)}}
+  hits.sort((a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
+  const counts={};TYPES.forEach(t=>counts[t]=hits.filter(h=>h.x.type===t).length);
+  if(filter!=="전체"&&!counts[filter])filter="전체";
+  const likely=hits.filter(h=>h.likely).length;
+  const nLocal=hits.filter(h=>h.x.reg!=="전국").length, nNat=hits.length-nLocal;
+  $("summary").innerHTML=`<div class="split"><a href="#sec-local" class="sp sp-l">${p.reg==="기타"?"대구·경북":esc(p.reg)} <b>${nLocal}</b>개</a><a href="#sec-nat" class="sp sp-n">전국 <b>${nNat}</b>개</a></div><span class="big">${hits.length}</span><span style="margin-right:10px">개 찾음 · <b class="badge-likely">${likely}개</b> 조건 충족</span>`+
+    ["전체",...TYPES].map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="${filter===t}">${t} ${t==="전체"?hits.length:counts[t]}</button>`).join("");
+  const shown=hits.filter(h=>filter==="전체"||h.x.type===filter);
+  const card=({x,c})=>{
+    const amt=typeof x.amount==="function"?x.amount(p):x.amount;
+    return `<article class="card">
+      <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${x.api?`<span class="tag t-api">보조금24</span>`:""}</div>
+      <h3>${esc(x.name)}</h3>
+      <div class="amount">${esc(amt)}</div>
+      ${(()=>{const per=x.per||PER[x.name],st=perState(per);return `<div class="period"><span class="st st-${st.k}">${st.l}</span><span>${esc(per?per.text:"공고 확인")}</span></div>`})()}
+      ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
+      <ul class="conds">${c.map(([v,l])=>`<li class="${v===true?"ok":"q"}"><i class="dot"></i>${esc(l)}</li>`).join("")}</ul>
+      <div class="meta">${x.org?`<span>기관: ${esc(x.org)}</span>`:""}<span>신청: ${esc(x.apply)}</span>${x.api&&x.api.tel?`<span>문의: ${esc(x.api.tel)}</span>`:""}</div>
+      ${x.api?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<p><b>대상</b> ${esc(x.api.target)}</p>`:""}${x.api.criteria?`<p><b>선정기준</b> ${esc(x.api.criteria)}</p>`:""}</details>${x.api.url?`<a class="go" href="${esc(x.api.url)}" target="_blank" rel="noopener">정부24에서 자세히 보기 →</a>`:""}`:""}
+    </article>`};
+  const local=shown.filter(h=>h.x.reg!=="전국"), nat=shown.filter(h=>h.x.reg==="전국");
+  const localName=p.reg==="기타"?"대구·경북":p.reg+" "+p.sgg;
+  const sec=(title,cls,arr,emptyMsg)=>{const key=cls==="h-local"?"local":"nat",lim=LIMIT[key];return `<div class="sec" id="sec-${key}"><h2 class="sec-h ${cls}">${title} <span>${arr.length}개</span></h2>
+    ${arr.length?`<div class="list">${arr.slice(0,lim).map(card).join("")}</div>${arr.length>lim?`<button type="button" class="moreBtn" data-k="${key}">더 보기 (${(arr.length-lim).toLocaleString()}개 남음)</button>`:""}`:`<div class="empty">${emptyMsg}</div>`}</div>`};
+  $("list").innerHTML=sec(esc(localName)+" 지원","h-local",local,p.reg==="기타"?"사는 곳을 대구나 경북으로 고르면 지역 지원이 보입니다.":"지금 조건에 맞는 지역 지원이 없습니다.")
+    +sec("전국 지원","h-nat",nat,"지금 조건에 맞는 전국 지원이 없습니다.");
+}
+$("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b){filter=b.dataset.t;render()}});
+$("region").addEventListener("change",()=>{fillSgg();render()});
+$("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
+$("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
+$("list").addEventListener("click",e=>{const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=60;render()}});
+$("openOnly").addEventListener("change",render);
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);
+fillSgg("수성구");render();
+fetch("data/benefits.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildApi).catch(()=>{});
+</script>
+
+</body>
+</html>

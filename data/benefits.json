@@ -1,0 +1,7 @@
+{"updated":"2026-10-24 03:00","count":5,"items":[
+{"id":"1","name":"수성구 청년 면접정장 대여","reg":"대구","sgg":"수성구","org":"대구광역시 수성구","kind":"서비스(일자리)","field":"고용·창업","summary":"청년 면접 정장 무료 대여","target":"만 19~39세 수성구 청년","criteria":"","content":"정장 무료 대여 연 3회","how":"방문","deadline":"상시신청","recv":"수성구청","tel":"053-000-0000","url":"https://www.gov.kr/","views":10,"cond":{"JA0110":19,"JA0111":39,"on":["JA0327"]}},
+{"id":"2","name":"달서구 출산축하금","reg":"대구","sgg":"달서구","org":"대구광역시 달서구","kind":"현금","field":"임신·출산","summary":"","target":"","criteria":"","content":"50만원","how":"","deadline":"","recv":"","tel":"","url":"","views":5,"cond":{"on":["JA0303"]}},
+{"id":"3","name":"저소득 가구 안경 지원","reg":"전국","sgg":"","org":"보건복지부","kind":"현물","field":"보건·의료","summary":"","target":"","criteria":"소득인정액 기준 중위소득 50% 이하, 재산 기준","content":"안경 구입비","how":"주민센터","deadline":"2026.01.01 ~ 2026.12.31","recv":"","tel":"","url":"","views":99,"cond":{"on":["JA0201"]}},
+{"id":"4","name":"부모급여","reg":"전국","sgg":"","org":"보건복지부","kind":"현금","field":"","summary":"","target":"","criteria":"","content":"","how":"","deadline":"","recv":"","tel":"","url":"","views":1,"cond":{}},
+{"id":"5","name":"신혼부부 건강검진","reg":"전국","sgg":"","org":"보건복지부","kind":"서비스(의료)","field":"","summary":"","target":"","criteria":"","content":"무료 검진","how":"","deadline":"상시","recv":"","tel":"","url":"","views":3,"cond":{}}
+]}
