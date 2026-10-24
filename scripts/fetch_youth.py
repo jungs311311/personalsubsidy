@@ -47,7 +47,34 @@ def get(key, page, size):
         time.sleep(5)
 
 
-def region(zips):
+from fetch_api import DG_SGG, GB_SGG, OTHER
+
+
+def region_by_org(org):
+    """주관·운영기관 이름으로 지역 판단. 모르면 None."""
+    org = org or ""
+    if org.startswith("대구"):
+        return "대구", next((v for k, v in DG_SGG.items() if k in org), "")
+    if org.startswith("경상북도") or org.startswith("경북"):
+        return "경북", next((v for k, v in GB_SGG.items() if k in org), "")
+    for k, v in DG_SGG.items():
+        if k in org:
+            return "대구", v
+    for k, v in GB_SGG.items():
+        if k in org:
+            return "경북", v
+    if any(x in org for x in OTHER):
+        return "다른지역", ""
+    return None
+
+
+def region(zips, orgs=()):
+    for org in orgs:
+        r = region_by_org(org)
+        if r == ("다른지역", ""):
+            return None, None
+        if r:
+            return r
     codes = [z.strip() for z in str(zips or "").split(",") if z.strip()]
     sido = {c[:2] for c in codes}
     if not codes or len(sido) >= 10:
@@ -90,7 +117,7 @@ def main():
 
     items = []
     for p in rows:
-        reg, sgg = region(p.get("zipCd"))
+        reg, sgg = region(p.get("zipCd"), (p.get("sprvsnInstCdNm"), p.get("operInstCdNm")))
         if not reg or p.get("lclsfNm") == "참여권리":
             continue
         it = {k: clip(p.get(k), 260) for k in KEEP if p.get(k) not in (None, "")}
