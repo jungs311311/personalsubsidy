@@ -128,6 +128,11 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
 .raw{font-size:12.5px;color:var(--muted)} .raw summary{cursor:pointer;color:var(--teal);font-weight:600}
 .rawtxt{margin-top:6px;white-space:normal}
 .more div{margin-top:6px}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%}
+.rowlab{font-size:12px;font-weight:700;color:var(--muted);width:34px;flex:none}
+.chip.tp[aria-pressed="true"]{background:var(--apple);border-color:var(--apple);color:#fff}
+.okonly{font-size:13px;font-weight:600;color:var(--ink);margin-right:6px}
+.t-tp{background:transparent;color:var(--muted);border:1px dashed var(--line)}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
@@ -205,7 +210,7 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
         <label class="check"><input type="checkbox" data-k="closed" checked><span class="st st-closed">마감</span><i id="cnt-closed"></i></label>
         <label class="check"><input type="checkbox" data-k="chk" checked><span class="st st-chk">공고 확인 필요</span><i id="cnt-chk"></i></label>
       </fieldset>
-      <div class="legend"><span><i class="dot" style="background:var(--teal)"></i>조건 충족</span><span><i class="dot" style="border:2px solid var(--gold)"></i>공고에서 직접 확인 필요</span></div>
+      <div class="legend"><label class="check okonly"><input type="checkbox" id="okOnly"> <i class="dot" style="background:var(--teal)"></i>조건 충족만 보기</label><span><i class="dot" style="background:var(--teal)"></i>조건 충족</span><span><i class="dot" style="border:2px solid var(--gold)"></i>공고에서 직접 확인 필요</span></div>
       <div id="list" style="display:flex;flex-direction:column;gap:22px"></div>
       <p class="note">직접 정리한 지원은 매일 공고·보도를 확인해 고치고, "보조금24" 표시가 붙은 지원은 행정안전부 공공서비스 데이터에서 매일 새벽 자동으로 가져옵니다. 금액과 모집 기간은 바뀔 수 있으니 신청 전 각 기관 공고를 꼭 확인하세요. 입력한 정보는 저장하지 않습니다.</p>
     </section>
@@ -479,7 +484,29 @@ function perState(per){
   if(s)return{k:"open",l:"신청 가능 (접수 중)"};
   return{k:"chk",l:"공고 확인 필요"};
 }
-const TYPES=["현금","바우처","대출·이자","감면·할인","구매지원","서비스"];
+const TYPES=["현금","바우처","대출·이자","감면·할인","물품","구매지원","서비스"];
+// 분야: 사업 이름·분야 정보·요약 문구로 자동 분류 (여러 분야에 동시에 속할 수 있음)
+const TOPICS=[
+ ["출산·육아",/임신|출산|산모|산후|신생아|난임|영유아|육아|보육|아동|어린이|유치원|부모급여|아이돌봄|아이 |아이를|아이사랑|아이조아|다자녀|다둥이|양육|기저귀|분유|입양/],
+ ["주거",/주거|주택|전세|월세|임대|임차|이사|집수리|버팀목|디딤돌|청약|전입/],
+ ["일자리·창업",/일자리|취업|구직|고용|창업|근로|직업|훈련|면접|채용|근속|실업|자활|내일배움|공공근로/],
+ ["교육·장학",/교육|장학|학비|학자금|입학|학교|학생|학습|강좌|자격증|응시료/],
+ ["의료·건강",/의료|건강|진료|병원|치료|검진|검사|예방접종|치매|재활|보청기|틀니|임플란트|안경|심리|정신|간호|수술|약제|질환|난청/],
+ ["어르신",/어르신|노인|경로|장수|고령|기초연금|노년|노후/],
+ ["장애인",/장애/],
+ ["생활비·생계",/생계|생활안정|긴급|수급자|차상위|저소득|에너지|난방|냉방|연탄|전기요금|가스요금|통신|수도요금|명절|급식|식품|농식품/],
+ ["금융·세금",/대출|이자|적금|저축|계좌|자산|세액|소득세|공제|장려금|금융|햇살론|신용|채무|보증료/],
+ ["문화·여가·교통",/문화|여가|체육|스포츠|관광|입장료|공연|도서|교통|K-패스|패스|여행|휴양|이용요금|축제/],
+ ["농어업",/농업|농가|농지|영농|농기계|어업|어선|수산|축산|임업|귀농|귀어|청년농|스마트팜|농어민|농림/],
+ ["안전·보훈",/보훈|유공자|참전|안전보험|재난|위기|범죄|법률/],
+];
+const FIELD_MAP={"임신·출산":"출산·육아","보육·교육":"교육·장학","보건·의료":"의료·건강","고용·창업":"일자리·창업","주거·자립":"주거","농림축산어업":"농어업","문화·환경":"문화·여가·교통","생활안정":"생활비·생계","행정·안전":"안전·보훈","보육":"출산·육아","신체건강":"의료·건강","정신건강":"의료·건강","서민금융":"금융·세금","일자리":"일자리·창업","교육":"교육·장학","문화·여가":"문화·여가·교통","에너지":"생활비·생계","생활지원":"생활비·생계","주거･":"주거"};
+function topicsOf(x){if(x._tp)return x._tp;const a=x.api||{},sm=x.sid&&SUM[x.sid];
+  const t=[x.name,typeof x.amount==="string"?x.amount.slice(0,120):"",sm?sm.who+" "+sm.what:""].join(" ");
+  const set=new Set();for(const [k,re] of TOPICS)if(re.test(t))set.add(k);
+  for(const f of String(a.field||"").split(/[,·]?\s*,\s*/))if(FIELD_MAP[f.trim()])set.add(FIELD_MAP[f.trim()]);
+  if(!set.size)set.add("기타");return x._tp=[...set]}
+let topic="전체";
 let filter="전체";
 
 // 재산까지 보는 지원: 카드에 경고 표시
@@ -546,7 +573,7 @@ const norm=s=>String(s).replace(/[\s()·\-–_,.\[\]]/g,"");
 const base=s=>norm(String(s).replace(/\(.*?\)/g,""));
 const MANUAL=new Set(P.map(x=>base(x.name)));
 function isDup(name){return MANUAL.has(base(name))}
-function kindOf(k){k=k||"";if(/감면/.test(k))return"감면·할인";if(/융자|대출/.test(k))return"대출·이자";if(/이용권|바우처/.test(k))return"바우처";if(/현금/.test(k))return"현금";return"서비스"}
+function kindOf(k){k=k||"";if(/감면/.test(k))return"감면·할인";if(/융자|대출/.test(k))return"대출·이자";if(/이용권|바우처/.test(k))return"바우처";if(/현금/.test(k))return"현금";if(/현물|물품/.test(k))return"물품";return"서비스"}
 const INC_LAB={JA0201:"50% 이하",JA0202:"51~75%",JA0203:"76~100%",JA0204:"101~200%",JA0205:"200% 초과"};
 const incCode=p=>p.inc===0?null:p.inc<=50?"JA0201":p.inc<=75?"JA0202":p.inc<=100?"JA0203":p.inc<=200?"JA0204":"JA0205";
 // 한 묶음의 칸이 "전부" 체크된 경우: 다른 묶음도 전부 체크된 사업(=누구나)이면 제한 없음으로 보고,
@@ -695,18 +722,23 @@ function render(){
   for(const k in stCnt)$("cnt-"+k).textContent=stCnt[k].toLocaleString();
   $("cnt-all").textContent=Object.values(stCnt).reduce((a,b)=>a+b,0).toLocaleString();
   {const bx=[...document.querySelectorAll("#stf input[data-k]")],n=bx.filter(i=>i.checked).length;$("stAll").checked=n===bx.length;$("stAll").indeterminate=n>0&&n<bx.length}
+  if($("okOnly").checked)for(let i=hits.length-1;i>=0;i--)if(!hits[i].likely)hits.splice(i,1);
   hits.sort((a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
-  const counts={};TYPES.forEach(t=>counts[t]=hits.filter(h=>h.x.type===t).length);
+  const tcount={};for(const h of hits)for(const t of topicsOf(h.x))tcount[t]=(tcount[t]||0)+1;
+  if(topic!=="전체"&&!tcount[topic])topic="전체";
+  const byTopic=hits.filter(h=>topic==="전체"||topicsOf(h.x).includes(topic));
+  const counts={};TYPES.forEach(t=>counts[t]=byTopic.filter(h=>h.x.type===t).length);
   if(filter!=="전체"&&!counts[filter])filter="전체";
   const likely=hits.filter(h=>h.likely).length;
   const nLocal=hits.filter(h=>h.x.reg!=="전국").length, nNat=hits.length-nLocal;
   $("summary").innerHTML=`<div class="split"><a href="#sec-local" class="sp sp-l">${p.reg==="기타"?"대구·경북":esc(p.reg)} <b>${nLocal}</b>개</a><a href="#sec-nat" class="sp sp-n">전국 <b>${nNat}</b>개</a></div><span class="big">${hits.length}</span><span style="margin-right:10px">개 찾음 · <b class="badge-likely">${likely}개</b> 조건 충족</span>`+
-    ["전체",...TYPES].map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="${filter===t}">${t} ${t==="전체"?hits.length:counts[t]}</button>`).join("");
-  const shown=hits.filter(h=>filter==="전체"||h.x.type===filter);
+    `<div class="chiprow"><span class="rowlab">분야</span>`+["전체",...TOPICS.map(t=>t[0]),"기타"].filter(t=>t==="전체"||tcount[t]).map(t=>`<button type="button" class="chip tp" data-tp="${t}" aria-pressed="${topic===t}">${t} ${t==="전체"?hits.length:tcount[t]}</button>`).join("")+`</div>`+
+    `<div class="chiprow"><span class="rowlab">형태</span>`+["전체",...TYPES].filter(t=>t==="전체"||counts[t]).map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="${filter===t}">${t} ${t==="전체"?byTopic.length:counts[t]}</button>`).join("")+`</div>`;
+  const shown=byTopic.filter(h=>filter==="전체"||h.x.type===filter);
   const card=({x,c})=>{
     const amt=typeof x.amount==="function"?x.amount(p):x.amount;
     return `<article class="card">
-      <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${x.api?`<span class="tag t-api">${esc(x.api.src||"보조금24")}</span>`:""}</div>
+      <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${topicsOf(x).filter(t=>t!=="기타").slice(0,2).map(t=>`<span class="tag t-tp">${t}</span>`).join("")}${x.api?`<span class="tag t-api">${esc(x.api.src||"보조금24")}</span>`:""}</div>
       <h3>${esc(x.name)}</h3>
       ${x.api&&SUM[x.sid]?sumHtml(x)+`<details class="raw"><summary>공고 원문 보기</summary><div class="rawtxt">${tidy(amt)}</div></details>`
         :x.api?`<div class="amount long">${tidy(amt)}</div>${String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}`
@@ -724,7 +756,8 @@ function render(){
   $("list").innerHTML=sec(esc(localName)+" 지원","h-local",local,p.reg==="기타"?"사는 곳을 대구나 경북으로 고르면 지역 지원이 보입니다.":"지금 조건에 맞는 지역 지원이 없습니다.")
     +sec("전국 지원","h-nat",nat,"지금 조건에 맞는 전국 지원이 없습니다.");
 }
-$("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b){filter=b.dataset.t;render()}});
+$("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;if(b.dataset.tp){topic=b.dataset.tp;filter="전체"}else filter=b.dataset.t;LIMIT={local:30,nat:30};render()});
+$("okOnly").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
 $("region").addEventListener("change",()=>{fillSgg();render()});
 $("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
