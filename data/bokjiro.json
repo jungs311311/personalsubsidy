@@ -1,0 +1,4 @@
+{"updated":"test","count":3,"items":[
+{"servId":"W1","servNm":"부모급여","jurMnofNm":"보건복지부","jurOrgNm":"","servDgst":"x","servDtlLink":"https://www.bokjiro.go.kr/","lifeArray":"영유아","intrsThemaArray":"보육","trgterIndvdlArray":"","sprtCycNm":"월","srvPvsnNm":"현금지급","rprsCtadr":"129","onapPsbltYn":"Y","inqNum":"10"},
+{"servId":"W2","servNm":"노인 무릎 수술 지원 테스트","jurMnofNm":"보건복지부","jurOrgNm":"","servDgst":"수술비 120만원","servDtlLink":"https://www.bokjiro.go.kr/","lifeArray":"노년","intrsThemaArray":"신체건강","trgterIndvdlArray":"저소득","sprtCycNm":"1회성","srvPvsnNm":"현금지급","rprsCtadr":"129","onapPsbltYn":"N","inqNum":"5"},
+{"servId":"W3","servNm":"영유아 테스트 바우처","jurMnofNm":"보건복지부","jurOrgNm":"","servDgst":"월 10만원","servDtlLink":"https://www.bokjiro.go.kr/","lifeArray":"영유아, 임신 · 출산","intrsThemaArray":"보육","trgterIndvdlArray":"","sprtCycNm":"월","srvPvsnNm":"전자바우처","rprsCtadr":"129","onapPsbltYn":"Y","inqNum":"5"}]}
