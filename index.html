@@ -110,7 +110,7 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
 .st-always{background:var(--teal-soft);color:var(--teal)}
 .stf{border:1px solid var(--line);border-radius:10px;padding:8px 12px 10px;margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;background:var(--surface)}
 .stf legend{font-size:12px;font-weight:600;color:var(--muted);padding:0 4px}
-.stf .check{font-size:13px;gap:6px} .stf .st{font-size:12.5px} .stf i{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stf .check{font-size:13px;gap:6px} .stf b{font-size:13px} .stf .st{font-size:12.5px} .stf i{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
@@ -181,6 +181,7 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
       <div class="summary" id="summary" style="scroll-margin-top:12px"></div>
       <input id="q" type="search" placeholder="지원 이름으로 찾기 (예: 월세, 출산, 장학금)" aria-label="지원 이름 검색">
       <fieldset class="stf" id="stf"><legend>신청 상태</legend>
+        <label class="check"><input type="checkbox" id="stAll" checked><b>전체</b><i id="cnt-all"></i></label>
         <label class="check"><input type="checkbox" data-k="always" checked><span class="st st-open">상시 신청 가능</span><i id="cnt-always"></i></label>
         <label class="check"><input type="checkbox" data-k="open" checked><span class="st st-open">신청 가능</span><i id="cnt-open"></i></label>
         <label class="check"><input type="checkbox" data-k="soon" checked><span class="st st-soon">접수 예정</span><i id="cnt-soon"></i></label>
@@ -629,9 +630,11 @@ function render(){
     if(c.some(([v])=>v===false))continue;
     hits.push({x,c,likely:c.every(([v])=>v===true)});
   }
-  const stOn=new Set([...document.querySelectorAll("#stf input:checked")].map(i=>i.dataset.k)),stCnt={always:0,open:0,soon:0,closed:0,chk:0};
+  const stOn=new Set([...document.querySelectorAll("#stf input[data-k]:checked")].map(i=>i.dataset.k)),stCnt={always:0,open:0,soon:0,closed:0,chk:0};
   for(let i=hits.length-1;i>=0;i--){const k=perState(hits[i].x.per||PER[hits[i].x.name]).k;stCnt[k]++;if(!stOn.has(k))hits.splice(i,1)}
   for(const k in stCnt)$("cnt-"+k).textContent=stCnt[k].toLocaleString();
+  $("cnt-all").textContent=Object.values(stCnt).reduce((a,b)=>a+b,0).toLocaleString();
+  {const bx=[...document.querySelectorAll("#stf input[data-k]")],n=bx.filter(i=>i.checked).length;$("stAll").checked=n===bx.length;$("stAll").indeterminate=n>0&&n<bx.length}
   hits.sort((a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
   const counts={};TYPES.forEach(t=>counts[t]=hits.filter(h=>h.x.type===t).length);
   if(filter!=="전체"&&!counts[filter])filter="전체";
@@ -664,7 +667,7 @@ $("region").addEventListener("change",()=>{fillSgg();render()});
 $("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("list").addEventListener("click",e=>{const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=60;render()}});
-$("stf").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
+$("stf").addEventListener("change",e=>{if(e.target.id==="stAll")document.querySelectorAll("#stf input[data-k]").forEach(i=>i.checked=e.target.checked);LIMIT={local:30,nat:30};render()});
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);
 fillSgg("수성구");render();
