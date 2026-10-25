@@ -74,7 +74,7 @@ def amounts(text, loose=False, cap=5 * 10**10):
         line_e = text.find("\n", m.end())
         line = text[line_s:line_e if line_e > 0 else m.end() + 60]
         near = text[max(line_s, m.start() - 30):m.end() + 25]  # 같은 줄 안에서만 대출 여부 판단
-        per = "월" if re.search(r"(매월|월)\s*(최대|최고)?\s*$", before[-8:]) else ""
+        per = "월" if re.search(r"(?<!개)(매월|월)\s*(최대|최고)?\s*$", before[-8:]) else ""  # "12개월 최대"는 월 지급 아님
         if not per and re.search(r"(1일|일당|하루)\s*(최대)?\s*$", before[-8:]):
             per = "1일"
         yearly = w * 12 if per == "월" else w
