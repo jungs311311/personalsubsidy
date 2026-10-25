@@ -40,6 +40,11 @@ jobs:
         env:
           YOUTH_KEY: ${{ secrets.YOUTH_KEY }}
         run: python scripts/fetch_youth.py
+      - name: 지원내용·선정기준 글에서 금액·소득·나이 뽑기 (실패해도 계속)
+        continue-on-error: true
+        env:
+          BOKJIRO_KEY: ${{ secrets.BOKJIRO_KEY || secrets.GOV24_KEY || secrets.ODCLOUD_KEY }}
+        run: python scripts/extract_details.py
       - name: 바뀐 게 있으면 저장
         run: |
           git config user.name "subsidy-bot"

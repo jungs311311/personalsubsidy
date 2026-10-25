@@ -60,6 +60,10 @@ select:focus,input:focus,button:focus-visible{outline:2px solid var(--teal);outl
 @media (max-width:420px){.list{grid-template-columns:1fr}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
+.money{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0}
+.money b{font-size:13px;font-weight:700;background:var(--teal-soft,#E2EFEA);color:var(--teal,#1E6A56);border-radius:6px;padding:2px 8px}
+.money i{font-style:normal;font-size:12.5px;color:var(--muted,#666);border:1px solid var(--line,#ddd);border-radius:6px;padding:1px 7px}
+.psort{font:inherit;font-size:13.5px;padding:4px 8px;border:1px solid var(--line,#ddd);border-radius:6px;background:transparent;color:inherit}
 .tag{font-size:11.5px;font-weight:600;border-radius:5px;padding:2px 7px;letter-spacing:.02em}
 .t-전국{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 .t-대구{background:var(--apple-soft);color:var(--apple)}
@@ -210,7 +214,7 @@ input[type=search]{font:inherit;color:var(--ink);background:var(--surface);borde
         <label class="check"><input type="checkbox" data-k="closed" checked><span class="st st-closed">마감</span><i id="cnt-closed"></i></label>
         <label class="check"><input type="checkbox" data-k="chk" checked><span class="st st-chk">공고 확인 필요</span><i id="cnt-chk"></i></label>
       </fieldset>
-      <div class="legend"><label class="check okonly"><input type="checkbox" id="okOnly"> <i class="dot" style="background:var(--teal)"></i>조건 충족만 보기</label><span><i class="dot" style="background:var(--teal)"></i>조건 충족</span><span><i class="dot" style="border:2px solid var(--gold)"></i>공고에서 직접 확인 필요</span></div>
+      <div class="legend"><label class="check okonly"><input type="checkbox" id="okOnly"> <i class="dot" style="background:var(--teal)"></i>조건 충족만 보기</label><select id="psort" class="psort" aria-label="정렬"><option value="rec">추천 순</option><option value="amt">지원 금액 큰 순</option><option value="loan">대출 한도 큰 순</option></select><span><i class="dot" style="background:var(--teal)"></i>조건 충족</span><span><i class="dot" style="border:2px solid var(--gold)"></i>공고에서 직접 확인 필요</span></div>
       <div id="list" style="display:flex;flex-direction:column;gap:22px"></div>
       <p class="note">직접 정리한 지원은 매일 공고·보도를 확인해 고치고, "보조금24" 표시가 붙은 지원은 행정안전부 공공서비스 데이터에서 매일 새벽 자동으로 가져옵니다. 금액과 모집 기간은 바뀔 수 있으니 신청 전 각 기관 공고를 꼭 확인하세요. 입력한 정보는 저장하지 않습니다.</p>
     </section>
@@ -566,6 +570,14 @@ function showInc(){
 function num(id){const v=$(id).value.trim();return v===""?NaN:+v}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
+// ── 세부 정보 (data/details.json · 매일 자동으로 지원내용·대상·선정기준 글에서 금액·소득·나이를 뽑음) ──
+let DET={};
+const detOf=x=>(x&&x.sid&&DET[x.sid])||null;
+function moneyLine(D){if(!D)return "";const a=[];
+  if(D.amt)a.push(`<b title="${esc("근거: "+(D.amtWhy||""))}">최대 ${esc(D.amtText)}</b>`);if(D.loan)a.push(`<b>대출 한도 ${esc(D.loanText)}</b>`);
+  if(D.rate)a.push(`<i>금리 연 ${D.rate}%</i>`);else if(D.rateSub)a.push(`<i>이자 지원 ${D.rateSub}%p</i>`);
+  if(D.inc)a.push(`<i>중위소득 ${D.inc}% 이하</i>`);if(D.age)a.push(`<i>만 ${D.age[0]}~${D.age[1]}세</i>`);
+  return a.length?`<div class="money">${a.join("")}</div>`:""}
 // ── 보조금24 API 데이터 (data/benefits.json · GitHub가 매일 자동 갱신) ──
 let APIITEMS=[], APIUPDATED="";
 const norm=s=>String(s).replace(/[\s()·\-–_,.\[\]]/g,"");
@@ -675,6 +687,11 @@ function textConds(x,p){const a=x.api||{},nm=x.name||"",all=[nm,x.amount,a.targe
   if(/어르신|노인|경로/.test(nm)&&!/청년|아동/.test(nm))r.push([p.age>=60?true:(p.age>=50?"?":false),"어르신 (공고 문구)"]);
   if(/신혼/.test(nm))r.push([married(p)?true:"?","신혼부부 (공고 문구)"]);
   if(/보훈|국가유공자|참전/.test(nm))r.push(["?","국가보훈대상자 (공고 문구)"]);
+  const D=detOf(x);
+  if(D&&a.src){ // 보조금24는 조건 코드가 있어서, 코드가 없는 복지로·온통청년만 글에서 뽑은 기준을 씀
+    if(D.inc&&p.inc)r.push([p.inc<=D.inc,`중위소득 ${D.inc}% 이하 (공고 문구)`]);
+    if(D.age&&a.src==="복지로")r.push([p.age>=D.age[0]&&p.age<=D.age[1],`만 ${D.age[0]}~${D.age[1]}세 (공고 문구)`]);
+  }
   return r}
 // ── 신청·안내 사이트 링크 (카드마다 어느 사이트로 가는지 주소까지 표시) ──
 const SITES=[
@@ -720,7 +737,9 @@ function render(){
   $("cnt-all").textContent=Object.values(stCnt).reduce((a,b)=>a+b,0).toLocaleString();
   {const bx=[...document.querySelectorAll("#stf input[data-k]")],n=bx.filter(i=>i.checked).length;$("stAll").checked=n===bx.length;$("stAll").indeterminate=n>0&&n<bx.length}
   if($("okOnly").checked)for(let i=hits.length-1;i>=0;i--)if(!hits[i].likely)hits.splice(i,1);
-  hits.sort((a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
+  const ps=$("psort").value,dv=(h,k)=>{const D=detOf(h.x);return D&&D[k]||0};
+  hits.sort(ps==="amt"?(a,b)=>dv(b,"amt")-dv(a,"amt")||(b.likely-a.likely):ps==="loan"?(a,b)=>dv(b,"loan")-dv(a,"loan")||(b.likely-a.likely)
+    :(a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
   const tcount={};for(const h of hits)for(const t of topicsOf(h.x))tcount[t]=(tcount[t]||0)+1;
   if(topic!=="전체"&&!tcount[topic])topic="전체";
   const byTopic=hits.filter(h=>topic==="전체"||topicsOf(h.x).includes(topic));
@@ -737,12 +756,14 @@ function render(){
     return `<article class="card">
       <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${topicsOf(x).filter(t=>t!=="기타").slice(0,2).map(t=>`<span class="tag t-tp">${t}</span>`).join("")}${x.api?`<span class="tag t-api">${esc(x.api.src||"보조금24")}</span>`:""}</div>
       <h3>${esc(x.name)}</h3>
+      ${moneyLine(detOf(x))}
       ${x.api?`<div class="amount long">${tidy(amt)}</div>${String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}`
         :`<div class="amount">${esc(amt)}</div>`}
       ${(()=>{const per=x.per||PER[x.name],st=perState(per);return `<div class="period"><span class="st st-${st.k}">${st.l}</span><span>${esc(per?per.text:"공고 확인")}</span></div>`})()}
       ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
       <ul class="conds">${c.map(([v,l])=>`<li class="${v===true?"ok":"q"}"><i class="dot"></i>${esc(l)}</li>`).join("")}</ul>
       <div class="meta">${x.org?`<span>기관: ${esc(x.org)}</span>`:""}<span>신청: ${esc(String(x.apply).replace(/\|\|/g," · "))}</span>${x.api&&x.api.tel?`<span>문의: ${esc(String(x.api.tel).replace(/\|\|/g," · "))}</span>`:""}</div>
+      ${(()=>{const D=detOf(x);if(x.api&&D&&!x.api.target&&!x.api.criteria&&(D.target||D.criteria||D.content)){x.api.target=D.target||"";x.api.criteria=[D.criteria,D.content&&("지원내용: "+D.content)].filter(Boolean).join(" ")}return ""})()}
       ${x.api&&(x.api.target||x.api.criteria)?`<details class="more"><summary>지원 대상 · 선정기준 보기</summary>${x.api.target?`<div><b>대상</b>${tidy(x.api.target)}</div>`:""}${x.api.criteria?`<div><b>선정기준</b>${tidy(x.api.criteria)}</div>`:""}</details>`:""}${linksHtml(x)}
     </article>`};
   const local=shown.filter(h=>h.x.reg!=="전국"), nat=shown.filter(h=>h.x.reg==="전국");
@@ -754,6 +775,7 @@ function render(){
 }
 $("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;if(b.dataset.tp){topic=b.dataset.tp;filter="전체"}else filter=b.dataset.t;LIMIT={local:30,nat:30};render()});
 $("okOnly").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
+$("psort").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
 $("region").addEventListener("change",()=>{fillSgg();render()});
 $("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
 $("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
@@ -762,6 +784,7 @@ $("stf").addEventListener("change",e=>{if(e.target.id==="stAll")document.querySe
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);
 fillSgg("수성구");render();
+fetch("data/details.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(j=>{if(j){DET=j.items||{};render()}}).catch(()=>{});
 fetch("data/benefits.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildApi).catch(()=>{})
   .finally(()=>fetch("data/bokjiro.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildBok).catch(()=>{})
   .finally(()=>fetch("data/local.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildLocal).catch(()=>{})
