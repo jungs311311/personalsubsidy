@@ -75,10 +75,14 @@ def amounts(text, loose=False, cap=5 * 10**10):
         line = text[line_s:line_e if line_e > 0 else m.end() + 60]
         near = text[max(line_s, m.start() - 30):m.end() + 25]  # 같은 줄 안에서만 대출 여부 판단
         per = "월" if re.search(r"(?<!개)(매월|월)\s*(최대|최고)?\s*$", before[-8:]) else ""  # "12개월 최대"는 월 지급 아님
+        if not per and re.search(r"매달|매월|월마다", before[-40:]) and not re.search(r"\d\s*개월", before[-15:]):
+            per = "월"
         if not per and re.search(r"(1일|일당|하루)\s*(최대)?\s*$", before[-8:]):
             per = "1일"
-        yearly = w * 12 if per == "월" else w
         strong = bool(re.search(r"최대|한도|이내|업체당|기업당|개사당|업소당|점포당|1인당|인당|가구당|호당|과제당|까지|최고", before[-20:] + after[:8]))
+        if loose and not strong:  # '지원내용' 칸: 월 지급이거나 바로 옆에 지급·지원 같은 말이 있으면 확실한 금액
+            strong = bool(per) or bool(re.search(r"지원|지급|보조|적립|수당|장학금", before[-12:] + after[:10]))
+        yearly = w * 12 if per == "월" else w
         out.append((yearly, _clean(line, 90), bool(LOAN.search(near) or LOAN.search(line[:50])), w, per, strong))
     return out
 
@@ -99,9 +103,11 @@ def extract(text, main="", cash_cap=None, title="", loan_cap=None):
     if cash:
         w, why, _, raw, per, _s = max(cash)
         d["amt"], d["amtText"], d["amtWhy"] = w, (f"{per} {won_text(raw)}" if per else won_text(raw)), why
+        d["amtSure"] = bool(_s)  # '업체당·1인당·최대·한도'가 붙은 금액이면 화면에 숫자로 보여줌
     if loan:
         w, why, _, raw, per, _s = max(loan)
         d["loan"], d["loanText"], d["loanWhy"] = raw, won_text(raw), why
+        d["loanSure"] = bool(_s)
 
     rates = []
     for m in re.finditer(r"(연\s*)?(\d{1,2}(?:\.\d{1,2})?)\s*%\s*(p|포인트)?", text):

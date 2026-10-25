@@ -573,8 +573,10 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 // ── 세부 정보 (data/details.json · 매일 자동으로 지원내용·대상·선정기준 글에서 금액·소득·나이를 뽑음) ──
 let DET={};
 const detOf=x=>(x&&x.sid&&DET[x.sid])||null;
+// '1인당·가구당·최대·한도'가 붙어 확실한 금액만 숫자로 씀
+const sure=(D,k)=>D&&D[k]&&D[k+"Sure"]!==false?D[k]:0;
 function moneyLine(D){if(!D)return "";const a=[];
-  if(D.amt)a.push(`<b title="${esc("근거: "+(D.amtWhy||""))}">최대 ${esc(D.amtText)}</b>`);if(D.loan)a.push(`<b>대출 한도 ${esc(D.loanText)}</b>`);
+  if(sure(D,"amt"))a.push(`<b title="${esc("근거: "+(D.amtWhy||""))}">최대 ${esc(D.amtText)}</b>`);if(sure(D,"loan"))a.push(`<b>대출 한도 ${esc(D.loanText)}</b>`);
   if(D.rate)a.push(`<i>금리 연 ${D.rate}%</i>`);else if(D.rateSub)a.push(`<i>이자 지원 ${D.rateSub}%p</i>`);
   if(D.inc)a.push(`<i>중위소득 ${D.inc}% 이하</i>`);if(D.age)a.push(`<i>만 ${D.age[0]}~${D.age[1]}세</i>`);
   return a.length?`<div class="money">${a.join("")}</div>`:""}
@@ -737,7 +739,7 @@ function render(){
   $("cnt-all").textContent=Object.values(stCnt).reduce((a,b)=>a+b,0).toLocaleString();
   {const bx=[...document.querySelectorAll("#stf input[data-k]")],n=bx.filter(i=>i.checked).length;$("stAll").checked=n===bx.length;$("stAll").indeterminate=n>0&&n<bx.length}
   if($("okOnly").checked)for(let i=hits.length-1;i>=0;i--)if(!hits[i].likely)hits.splice(i,1);
-  const ps=$("psort").value,dv=(h,k)=>{const D=detOf(h.x);return D&&D[k]||0};
+  const ps=$("psort").value,dv=(h,k)=>sure(detOf(h.x),k);
   hits.sort(ps==="amt"?(a,b)=>dv(b,"amt")-dv(a,"amt")||(b.likely-a.likely):ps==="loan"?(a,b)=>dv(b,"loan")-dv(a,"loan")||(b.likely-a.likely)
     :(a,b)=>(b.likely-a.likely)||(!!a.x.api-!!b.x.api)||((b.x.views||0)-(a.x.views||0)));
   const tcount={};for(const h of hits)for(const t of topicsOf(h.x))tcount[t]=(tcount[t]||0)+1;

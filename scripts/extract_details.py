@@ -47,7 +47,7 @@ def squash(s, n=500):
 
 def keep(d):
     """사이트에 필요한 칸만 남겨 파일 크기를 줄임"""
-    k = ("amt", "amtText", "amtWhy", "loan", "loanText", "rate", "rateSub", "inc", "age", "forms", "count", "countText")
+    k = ("amt", "amtText", "amtWhy", "amtSure", "loan", "loanText", "loanSure", "rate", "rateSub", "inc", "age", "forms", "count", "countText")
     return {x: d[x] for x in k if x in d}
 
 
