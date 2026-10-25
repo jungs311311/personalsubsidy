@@ -33,7 +33,7 @@ def won_text(w):
 
 
 SUPPORT = re.compile(r"최대|한도|이내|까지|지원|단가|장학금|적립|위로금|축하금|양육|업체당|개사당|개소당|점포당|1인당|가구당|1개사|보조|지급|융자|보증|대출|수당|급여|장려금|바우처|감면|환급")
-CRITERIA = re.compile(r"매출|자산|부채|소득|과세표준|재산|보증금|시가|공시가|건강보험료|월급|임금|연봉|주택|가격|매매|분양가|전세금|평가액|보험가입금액|총급여|종합소득|합산액|수출액|수출실적|투자유치|투자\s*금액|거래금액|누적")
+CRITERIA = re.compile(r"매출|자산|부채|소득|과세표준|재산|보증금|시가|공시가|건강보험료|월급|임금|연봉|주택|가격|매매|분양가|전세금|평가액|보험가입금액|총급여|종합소득|원금|납입|저축액|합산액|수출액|수출실적|투자유치|투자\s*금액|거래금액|누적")
 BUDGET = re.compile(r"(^|[\s(,:])총\s*$|예산|사업비|규모|총\s*사업비|총\s*예산|사업\s*예산|예산\s*규모|총\s*\d|총액|기금\s*규모|사업\s*규모|재원")
 LOAN = re.compile(r"융자|대출|대부|보증|이차보전|이자\s*지원|대환|특례보증|자금")
 FORMS = [
@@ -78,31 +78,35 @@ def amounts(text, loose=False, cap=5 * 10**10):
         if not per and re.search(r"(1일|일당|하루)\s*(최대)?\s*$", before[-8:]):
             per = "1일"
         yearly = w * 12 if per == "월" else w
-        out.append((yearly, _clean(line, 90), bool(LOAN.search(near) or LOAN.search(line[:50])), w, per))
+        strong = bool(re.search(r"최대|한도|이내|업체당|기업당|개사당|업소당|점포당|1인당|인당|가구당|호당|과제당|까지|최고", before[-20:] + after[:8]))
+        out.append((yearly, _clean(line, 90), bool(LOAN.search(near) or LOAN.search(line[:50])), w, per, strong))
     return out
 
 
-def extract(text, main="", cash_cap=None, title=""):
+def extract(text, main="", cash_cap=None, title="", loan_cap=None):
     """공고문 글 → 세부 정보 dict (못 찾은 칸은 넣지 않음).
     main: '지원내용'처럼 금액이 나오면 곧 지원 금액인 글 (지원·최대 같은 말이 없어도 금액으로 봄)"""
     text = ((main + "\n") if main else "") + (text or "")
     d = {}
     am = (amounts(main, loose=True) if main else []) + amounts(text[len(main):] if main else text)
     if title and re.search(r"융자|육성자금|경영안정자금|특례보증|정책자금|대출|보증", title) and not re.search(r"보조|지원금|무상|바우처", title):
-        am = [(a[0], a[1], a[2] or not re.search(r"보조금|지원금|무상|현금", a[1]), a[3], a[4]) for a in am]  # 대출 공고의 금액은 대출 한도로 봄
+        am = [(a[0], a[1], a[2] or not re.search(r"보조금|지원금|무상|현금", a[1]), a[3], a[4], a[5]) for a in am]  # 대출 공고의 금액은 대출 한도로 봄
     cash = [a for a in am if not a[2] and (not cash_cap or a[3] <= cash_cap)]
-    loan = [a for a in am if a[2]]
+    loan = [a for a in am if a[2] and (not loan_cap or a[3] <= loan_cap)]
+    # '최대·한도·업체당' 같은 말이 붙은 금액이 있으면 그것만 봄 (표 속 총액·예산 배분을 피함)
+    cash = [a for a in cash if a[5]] or cash
+    loan = [a for a in loan if a[5]] or loan
     if cash:
-        w, why, _, raw, per = max(cash)
+        w, why, _, raw, per, _s = max(cash)
         d["amt"], d["amtText"], d["amtWhy"] = w, (f"{per} {won_text(raw)}" if per else won_text(raw)), why
     if loan:
-        w, why, _, raw, per = max(loan)
+        w, why, _, raw, per, _s = max(loan)
         d["loan"], d["loanText"], d["loanWhy"] = raw, won_text(raw), why
 
     rates = []
     for m in re.finditer(r"(연\s*)?(\d{1,2}(?:\.\d{1,2})?)\s*%\s*(p|포인트)?", text):
         ctx = text[max(0, m.start() - 25):m.end() + 8]
-        if re.search(r"금리|이자|이차보전|보전|이율|대출", ctx):
+        if re.search(r"금리|이자|이차보전|보전|이율|대출", ctx) and not re.search(r"우대|가산|인하|감면", ctx[:30]):
             rates.append((float(m.group(2)), bool(re.search(r"이차\s*보전|이자\s*(지원|보전|감면)|보전", ctx)), _clean(ctx, 60)))
     if rates:
         sub = [r for r in rates if r[1]]

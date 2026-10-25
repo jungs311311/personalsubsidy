@@ -105,13 +105,13 @@ def main():
 
     for it in load("benefits.json"):
         text = "\n".join([it.get("target", ""), it.get("criteria", ""), it.get("summary", "")])
-        d = keep(details.extract(text, main=it.get("content", ""), cash_cap=10**8))
+        d = keep(details.extract(text, main=it.get("content", ""), cash_cap=10**8, loan_cap=10**9))
         if d:
             out["g:" + str(it.get("id"))] = d
 
     for it in load("youth.json"):
         text = "\n".join(str(it.get(k) or "") for k in ("plcyExplnCn", "addAplyQlfcCndCn", "earnEtcCn"))
-        d = keep(details.extract(text, main=str(it.get("plcySprtCn") or ""), cash_cap=10**8))
+        d = keep(details.extract(text, main=str(it.get("plcySprtCn") or ""), cash_cap=10**8, loan_cap=10**9))
         if d:
             out["y:" + str(it.get("plcyNo"))] = d
 
@@ -127,7 +127,13 @@ def main():
             k = f"{kind}:{sid}"
             prev = old.get(k)
             if prev and prev.get("v") == VERSION and prev.get("mod") == it.get("lastModYmd", ""):
-                out[k] = prev
+                if prev.get("content") or prev.get("target"):  # 저장해 둔 상세 글로 새 규칙을 다시 적용
+                    d = keep(details.extract("\n".join([prev.get("target", ""), prev.get("criteria", "")]),
+                                             main=prev.get("content", ""), cash_cap=10**8, loan_cap=10**9))
+                    d.update({x: prev[x] for x in ("v", "mod", "target", "criteria", "content") if x in prev})
+                    out[k] = d
+                else:
+                    out[k] = prev
                 continue
             txt = None
             if key and kind not in stopped and calls < MAX_DETAIL_CALLS:
@@ -140,11 +146,11 @@ def main():
                 if prev:
                     out[k] = prev  # 못 받으면 예전 것 유지
                 else:
-                    d = keep(details.extract(it.get("servDgst", ""), cash_cap=10**8))
+                    d = keep(details.extract(it.get("servDgst", ""), cash_cap=10**8, loan_cap=10**9))
                     if d:
                         out[k] = d
                 continue
-            d = keep(details.extract("\n".join([txt.get("target", ""), txt.get("criteria", "")]), main=txt.get("content", ""), cash_cap=10**8))
+            d = keep(details.extract("\n".join([txt.get("target", ""), txt.get("criteria", "")]), main=txt.get("content", ""), cash_cap=10**8, loan_cap=10**9))
             d.update(v=VERSION, mod=it.get("lastModYmd", ""),
                      target=squash(txt.get("target"), 400), criteria=squash(txt.get("criteria"), 400),
                      content=squash(txt.get("content"), 400))
