@@ -51,6 +51,15 @@ def keep(d):
     return {x: d[x] for x in k if x in d}
 
 
+LOG = {"calls": 0, "ok": {"b": 0, "l": 0}, "empty": {"b": 0, "l": 0}, "errors": []}
+
+
+def note(msg):
+    print(msg)
+    if len(LOG["errors"]) < 8:
+        LOG["errors"].append(msg[:200])
+
+
 def get_detail(kind, key, sid):
     url, extra, fields = DETAIL[kind]
     q = urllib.parse.urlencode({"serviceKey": key, "servId": sid, **extra})
@@ -60,16 +69,26 @@ def get_detail(kind, key, sid):
                 root = ET.fromstring(r.read())
             code = root.findtext(".//resultCode") or root.findtext(".//returnReasonCode") or ""
             if code and code not in ("0", "00"):
-                print(f"  상세 API 오류 {sid}: {code} {root.findtext('.//resultMessage') or root.findtext('.//returnAuthMsg')}")
+                note(f"{kind} 상세 API 오류 {sid}: {code} {root.findtext('.//resultMessage') or root.findtext('.//returnAuthMsg')}")
                 return None if code in ("22", "30", "31", "32") else {}
-            return {k: squash(root.findtext(f".//{tag}") or "", 900) for k, tag in fields.items()}
+            got = {k: squash(root.findtext(f".//{tag}") or "", 900) for k, tag in fields.items()}
+            if not any(got.values()):
+                LOG["empty"][kind] += 1
+                if LOG["empty"][kind] <= 2:
+                    note(f"{kind} 상세 응답에 내용 없음 {sid}: {ET.tostring(root, encoding='unicode')[:150]}")
+            else:
+                LOG["ok"][kind] += 1
+            return got
         except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 2:
+                time.sleep(15)  # 초당 호출 제한: 잠깐 쉬고 다시
+                continue
             if e.code in (401, 403, 429):
-                print(f"  상세 API 거절 HTTP {e.code} — 오늘은 여기까지")
+                note(f"{kind} 상세 API 거절 HTTP {e.code} {sid} — 오늘은 여기까지")
                 return None
         except Exception as e:
             if attempt == 2:
-                print(f"  상세 받기 실패 {sid}: {type(e).__name__}")
+                note(f"{kind} 상세 받기 실패 {sid}: {type(e).__name__}: {str(e)[:80]}")
                 return {}
         time.sleep(3)
     return {}
@@ -99,7 +118,7 @@ def main():
     key = os.environ.get("BOKJIRO_KEY", "").strip()
     if "%" in key:
         key = urllib.parse.unquote(key)
-    calls, stopped = 0, False
+    calls, stopped = 0, set()
     for kind, fname in (("b", "bokjiro.json"), ("l", "local.json")):
         for it in load(fname):
             sid = str(it.get("servId") or "")
@@ -111,12 +130,12 @@ def main():
                 out[k] = prev
                 continue
             txt = None
-            if key and not stopped and calls < MAX_DETAIL_CALLS:
+            if key and kind not in stopped and calls < MAX_DETAIL_CALLS:
                 txt = get_detail(kind, key, sid)
                 calls += 1
                 if txt is None:
-                    stopped = True
-                time.sleep(0.15)
+                    stopped.add(kind)
+                time.sleep(0.3)
             if not txt:
                 if prev:
                     out[k] = prev  # 못 받으면 예전 것 유지
@@ -134,7 +153,7 @@ def main():
     found = sum(1 for d in out.values() if "amt" in d or "loan" in d)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump({"updated": datetime.now(KST).strftime("%Y-%m-%d %H:%M"), "count": len(out), "withAmount": found,
-                   "items": out}, f, ensure_ascii=False, separators=(",", ":"))
+                   "log": {**LOG, "calls": calls}, "items": out}, f, ensure_ascii=False, separators=(",", ":"))
     print(f"세부 정보 {len(out)}건 저장 (금액 찾음 {found}건, 복지로 상세 API {calls}번 호출)")
 
 

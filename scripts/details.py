@@ -33,8 +33,8 @@ def won_text(w):
 
 
 SUPPORT = re.compile(r"최대|한도|이내|까지|지원|단가|장학금|적립|위로금|축하금|양육|업체당|개사당|개소당|점포당|1인당|가구당|1개사|보조|지급|융자|보증|대출|수당|급여|장려금|바우처|감면|환급")
-CRITERIA = re.compile(r"매출|자산|부채|소득|과세표준|재산|보증금|시가|공시가|건강보험료|월급|임금|연봉|주택|가격|매매|분양가|전세금|평가액|보험가입금액|총급여|종합소득|투자유치|투자\s*금액|거래금액|누적")
-BUDGET = re.compile(r"(^|[\s(,:])총\s*$|예산|사업비|총\s*사업비|총\s*예산|사업\s*예산|예산\s*규모|총\s*\d|총액|기금\s*규모|사업\s*규모|재원")
+CRITERIA = re.compile(r"매출|자산|부채|소득|과세표준|재산|보증금|시가|공시가|건강보험료|월급|임금|연봉|주택|가격|매매|분양가|전세금|평가액|보험가입금액|총급여|종합소득|합산액|수출액|수출실적|투자유치|투자\s*금액|거래금액|누적")
+BUDGET = re.compile(r"(^|[\s(,:])총\s*$|예산|사업비|규모|총\s*사업비|총\s*예산|사업\s*예산|예산\s*규모|총\s*\d|총액|기금\s*규모|사업\s*규모|재원")
 LOAN = re.compile(r"융자|대출|대부|보증|이차보전|이자\s*지원|대환|특례보증|자금")
 FORMS = [
     ("대출·보증", re.compile(r"융자|대출|특례보증|신용보증|보증서|대환|이차보전|이자\s*(지원|보전)")),
@@ -73,7 +73,7 @@ def amounts(text, loose=False, cap=5 * 10**10):
         line_s = text.rfind("\n", 0, m.start()) + 1
         line_e = text.find("\n", m.end())
         line = text[line_s:line_e if line_e > 0 else m.end() + 60]
-        near = text[max(line_s, m.start() - 30):m.end() + 12]  # 같은 줄 안에서만 대출 여부 판단
+        near = text[max(line_s, m.start() - 30):m.end() + 25]  # 같은 줄 안에서만 대출 여부 판단
         per = "월" if re.search(r"(매월|월)\s*(최대|최고)?\s*$", before[-8:]) else ""
         if not per and re.search(r"(1일|일당|하루)\s*(최대)?\s*$", before[-8:]):
             per = "1일"
@@ -82,12 +82,14 @@ def amounts(text, loose=False, cap=5 * 10**10):
     return out
 
 
-def extract(text, main="", cash_cap=None):
+def extract(text, main="", cash_cap=None, title=""):
     """공고문 글 → 세부 정보 dict (못 찾은 칸은 넣지 않음).
     main: '지원내용'처럼 금액이 나오면 곧 지원 금액인 글 (지원·최대 같은 말이 없어도 금액으로 봄)"""
     text = ((main + "\n") if main else "") + (text or "")
     d = {}
     am = (amounts(main, loose=True) if main else []) + amounts(text[len(main):] if main else text)
+    if title and re.search(r"융자|육성자금|경영안정자금|특례보증|정책자금|대출|보증", title) and not re.search(r"보조|지원금|무상|바우처", title):
+        am = [(a[0], a[1], a[2] or not re.search(r"보조금|지원금|무상|현금", a[1]), a[3], a[4]) for a in am]  # 대출 공고의 금액은 대출 한도로 봄
     cash = [a for a in am if not a[2] and (not cash_cap or a[3] <= cash_cap)]
     loan = [a for a in am if a[2]]
     if cash:
