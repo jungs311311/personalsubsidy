@@ -699,10 +699,7 @@ function tidy(t){t=String(t||"").replace(/\|\|/g," · ").trim();if(!t)return"";
   const parts=t.split(/\s*(?:^|\s)(?=[○ㅇ◦•▶▷■□◎※]|-\s|\d\)\s|[①-⑳])/).map(x=>x.replace(/^[○ㅇ◦•▶▷■□◎\-]\s*/,"").trim()).filter(Boolean);
   if(parts.length<=1)return esc(t);
   return "<ul class='tidy'>"+parts.map(x=>`<li${/^※/.test(x)?" class='note'":""}>${esc(x.replace(/^※\s*/,"※ "))}</li>`).join("")+"</ul>"}
-// ── A. 요약 (data/summaries.json · 매일 9시 작업이 조회수 순으로 채움) ──
-let SUM={};
-function sumHtml(x){const s=x.sid&&SUM[x.sid];if(!s)return"";
-  return `<dl class="sum">${s.who?`<dt>누가</dt><dd>${esc(s.who)}</dd>`:""}${s.what?`<dt>무엇을</dt><dd>${esc(s.what)}</dd>`:""}${s.how?`<dt>어떻게</dt><dd>${esc(s.how)}</dd>`:""}</dl>`}
+const SUM={};
 let LIMIT={local:30,nat:30};
 function render(){
   showInc();
@@ -740,8 +737,7 @@ function render(){
     return `<article class="card">
       <div class="tags"><span class="tag t-${x.reg}">${x.reg==="전국"?"전국":x.reg}${x.api&&x.api.sgg&&/[시군구]$/.test(x.api.sgg)?" "+esc(x.api.sgg):""}</span><span class="tag t-type">${x.type}</span>${topicsOf(x).filter(t=>t!=="기타").slice(0,2).map(t=>`<span class="tag t-tp">${t}</span>`).join("")}${x.api?`<span class="tag t-api">${esc(x.api.src||"보조금24")}</span>`:""}</div>
       <h3>${esc(x.name)}</h3>
-      ${x.api&&SUM[x.sid]?sumHtml(x)+`<details class="raw"><summary>공고 원문 보기</summary><div class="rawtxt">${tidy(amt)}</div></details>`
-        :x.api?`<div class="amount long">${tidy(amt)}</div>${String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}`
+      ${x.api?`<div class="amount long">${tidy(amt)}</div>${String(amt||"").length>70?`<button type="button" class="expand" aria-expanded="false">전체 보기 ▾</button>`:""}`
         :`<div class="amount">${esc(amt)}</div>`}
       ${(()=>{const per=x.per||PER[x.name],st=perState(per);return `<div class="period"><span class="st st-${st.k}">${st.l}</span><span>${esc(per?per.text:"공고 확인")}</span></div>`})()}
       ${(x.asset||ASSET[x.name])?`<div class="warn"><b>재산도 봅니다</b> ${esc(x.asset||ASSET[x.name])}</div>`:""}
@@ -770,7 +766,7 @@ fetch("data/benefits.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.rej
   .finally(()=>fetch("data/bokjiro.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildBok).catch(()=>{})
   .finally(()=>fetch("data/local.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildLocal).catch(()=>{})
   .finally(()=>fetch("data/youth.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(buildYouth).catch(()=>{}))));
-fetch("data/summaries.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(j=>{SUM=j.items||{};render()}).catch(()=>{});
+
 </script>
 
 <div class="gobar" id="gobar"><button type="button" id="gobtn">결과 보기</button></div>
