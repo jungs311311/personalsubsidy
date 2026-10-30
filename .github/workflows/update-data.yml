@@ -15,7 +15,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,6 +42,7 @@ jobs:
         run: python scripts/fetch_youth.py
       - name: 지원내용·선정기준 글에서 금액·소득·나이 뽑기 (실패해도 계속)
         continue-on-error: true
+        timeout-minutes: 15   # 오래 걸려도 아래 '저장'은 꼭 하도록
         env:
           BOKJIRO_KEY: ${{ secrets.BOKJIRO_KEY || secrets.GOV24_KEY || secrets.ODCLOUD_KEY }}
         run: python scripts/extract_details.py
