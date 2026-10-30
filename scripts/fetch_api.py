@@ -147,6 +147,8 @@ def main():
             "tel": clip(s.get("전화문의"), 60),
             "url": s.get("상세조회URL") or "",
             "views": s.get("조회수") or 0,
+            "posted": str(s.get("등록일시") or "")[:19],
+            "modified": str(s.get("수정일시") or "")[:19],
             "cond": compact_cond(conds.get(sid, {})),
         })
 

@@ -22,7 +22,7 @@ SGG = {
 KEEP = ["plcyNo", "plcyNm", "plcyKywdNm", "plcyExplnCn", "lclsfNm", "mclsfNm", "plcySprtCn", "sprvsnInstCdNm",
         "operInstCdNm", "aplyYmd", "plcyAplyMthdCn", "aplyUrlAddr", "refUrlAddr1", "sprtTrgtMinAge", "sprtTrgtMaxAge",
         "sprtTrgtAgeLmtYn", "earnCndSeCd", "earnMinAmt", "earnMaxAmt", "earnEtcCn", "addAplyQlfcCndCn", "inqCnt",
-        "bizPrdBgngYmd", "bizPrdEndYmd", "bizPrdEtcCn"]
+        "bizPrdBgngYmd", "bizPrdEndYmd", "bizPrdEtcCn", "frstRegDt", "lastMdfcnDt"]
 
 
 def clip(s, n):

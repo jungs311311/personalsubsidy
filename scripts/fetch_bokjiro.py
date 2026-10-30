@@ -54,7 +54,12 @@ def main():
         total = int(root.findtext(".//totalCount") or 0)
         batch = root.findall(".//servList")
         for s in batch:
-            items.append({f: text(s, f) for f in FIELDS})
+            it = {f: text(s, f) for f in FIELDS}
+            # 등록·수정 날짜 칸(이름이 Ymd/Dt/Ts 로 끝남)도 함께 저장 → 페이지 "최신 공고 순"
+            for c in s:
+                if c.tag not in it and c.tag.endswith(("Ymd", "Dt", "Ts")) and c.text:
+                    it[c.tag] = c.text.strip()[:19]
+            items.append(it)
         print(f"복지로 목록: {len(items)}/{total}", flush=True)
         if not batch or len(items) >= total:
             break
@@ -67,7 +72,7 @@ def main():
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump({"updated": datetime.now(KST).strftime("%Y-%m-%d %H:%M"), "count": len(items), "items": items},
                   f, ensure_ascii=False, separators=(",", ":"))
-    print(f"저장 완료: {len(items)}건")
+    print(f"저장 완료: {len(items)}건 · 필드 예: {sorted(items[0].keys())}")
 
 
 if __name__ == "__main__":
