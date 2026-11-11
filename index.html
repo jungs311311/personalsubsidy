@@ -748,7 +748,7 @@ function tidy(t){t=String(t||"").replace(/\|\|/g," · ").trim();if(!t)return"";
   if(parts.length<=1)return esc(t);
   return "<ul class='tidy'>"+parts.map(x=>`<li${/^※/.test(x)?" class='note'":""}>${esc(x.replace(/^※\s*/,"※ "))}</li>`).join("")+"</ul>"}
 const SUM={};
-let LIMIT={local:30,nat:30};
+let LIMIT={local:10,nat:10};
 function render(){
   showInc();
   const p=read();
@@ -779,7 +779,7 @@ function render(){
   if(filter!=="전체"&&!counts[filter])filter="전체";
   const likely=hits.filter(h=>h.likely).length;
   const nLocal=hits.filter(h=>h.x.reg!=="전국").length, nNat=hits.length-nLocal;
-  $("summary").innerHTML=`<div class="split"><a href="#sec-local" class="sp sp-l">${p.reg==="기타"?"대구·경북":esc(p.reg)} <b>${nLocal}</b>개</a><a href="#sec-nat" class="sp sp-n">전국 <b>${nNat}</b>개</a></div><span class="big">${hits.length}</span><span style="margin-right:10px">개 찾음 · <b class="badge-likely">${likely}개</b> 조건 충족</span>`+
+  $("summary").innerHTML=`<div class="split"><a href="#sec-nat" class="sp sp-n">전국 <b>${nNat}</b>개</a><a href="#sec-local" class="sp sp-l">${p.reg==="기타"?"대구·경북":esc(p.reg)} <b>${nLocal}</b>개</a></div><span class="big">${hits.length}</span><span style="margin-right:10px">개 찾음 · <b class="badge-likely">${likely}개</b> 조건 충족</span>`+
     `<div class="chiprow"><span class="rowlab">분야</span>`+["전체",...TOPICS.map(t=>t[0]),"기타"].filter(t=>t==="전체"||tcount[t]).map(t=>`<button type="button" class="chip tp" data-tp="${t}" aria-pressed="${topic===t}">${t} ${t==="전체"?hits.length:tcount[t]}</button>`).join("")+`</div>`+
     `<div class="chiprow"><span class="rowlab">형태</span>`+["전체",...TYPES].filter(t=>t==="전체"||counts[t]).map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="${filter===t}">${t} ${t==="전체"?byTopic.length:counts[t]}</button>`).join("")+`</div>`;
   const shown=byTopic.filter(h=>filter==="전체"||h.x.type===filter);
@@ -802,17 +802,17 @@ function render(){
   const localName=p.reg==="기타"?"대구·경북":p.reg+" "+p.sgg;
   const sec=(title,cls,arr,emptyMsg)=>{const key=cls==="h-local"?"local":"nat",lim=LIMIT[key];return `<div class="sec" id="sec-${key}"><h2 class="sec-h ${cls}">${title} <span>${arr.length}개</span></h2>
     ${arr.length?`<div class="list">${arr.slice(0,lim).map(card).join("")}</div>${arr.length>lim?`<button type="button" class="moreBtn" data-k="${key}">더 보기 (${(arr.length-lim).toLocaleString()}개 남음)</button>`:""}`:`<div class="empty">${emptyMsg}</div>`}</div>`};
-  $("list").innerHTML=sec(esc(localName)+" 지원","h-local",local,p.reg==="기타"?"사는 곳을 대구나 경북으로 고르면 지역 지원이 보입니다.":"지금 조건에 맞는 지역 지원이 없습니다.")
-    +sec("전국 지원","h-nat",nat,"지금 조건에 맞는 전국 지원이 없습니다.");
+  $("list").innerHTML=sec("전국 지원","h-nat",nat,"지금 조건에 맞는 전국 지원이 없습니다.")
+    +sec(esc(localName)+" 지원","h-local",local,p.reg==="기타"?"사는 곳을 대구나 경북으로 고르면 지역 지원이 보입니다.":"지금 조건에 맞는 지역 지원이 없습니다.");
 }
-$("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;if(b.dataset.tp){topic=b.dataset.tp;filter="전체"}else filter=b.dataset.t;LIMIT={local:30,nat:30};render()});
-$("okOnly").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
-$("psort").addEventListener("change",()=>{LIMIT={local:30,nat:30};render()});
+$("summary").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;if(b.dataset.tp){topic=b.dataset.tp;filter="전체"}else filter=b.dataset.t;LIMIT={local:10,nat:10};render()});
+$("okOnly").addEventListener("change",()=>{LIMIT={local:10,nat:10};render()});
+$("psort").addEventListener("change",()=>{LIMIT={local:10,nat:10};render()});
 $("region").addEventListener("change",()=>{fillSgg();render()});
-$("f").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
-$("q").addEventListener("input",()=>{LIMIT={local:30,nat:30};render()});
-$("list").addEventListener("click",e=>{const ex=e.target.closest(".expand");if(ex){const a=ex.previousElementSibling,open=a.classList.toggle("open");ex.textContent=open?"접기 ▴":"전체 보기 ▾";ex.setAttribute("aria-expanded",open);return}const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=60;render()}});
-$("stf").addEventListener("change",e=>{if(e.target.id==="stAll")document.querySelectorAll("#stf input[data-k]").forEach(i=>i.checked=e.target.checked);LIMIT={local:30,nat:30};render()});
+$("f").addEventListener("input",()=>{LIMIT={local:10,nat:10};render()});
+$("q").addEventListener("input",()=>{LIMIT={local:10,nat:10};render()});
+$("list").addEventListener("click",e=>{const ex=e.target.closest(".expand");if(ex){const a=ex.previousElementSibling,open=a.classList.toggle("open");ex.textContent=open?"접기 ▴":"전체 보기 ▾";ex.setAttribute("aria-expanded",open);return}const b=e.target.closest(".moreBtn");if(b){LIMIT[b.dataset.k]+=10;render()}});
+$("stf").addEventListener("change",e=>{if(e.target.id==="stAll")document.querySelectorAll("#stf input[data-k]").forEach(i=>i.checked=e.target.checked);LIMIT={local:10,nat:10};render()});
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("checked").textContent=CHECKED.replace(/^(\d+)-(\d+)-(\d+)$/,(m,y,mo,d)=>`${+y}년 ${+mo}월 ${+d}일`);
 fillSgg("수성구");render();
